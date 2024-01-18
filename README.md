@@ -2,7 +2,8 @@
 
 Unofficial implementation of [PhotoMaker](https://github.com/TencentARC/PhotoMaker) for ComfyUI.
 
-<img width="1261" alt="example" src="https://github.com/shiimizu/ComfyUI-PhotoMaker/assets/54494639/0a164254-da1c-4aa6-9e6b-957a6118a09a">
+<img width="1261" alt="example" src="https://github.com/shiimizu/ComfyUI-PhotoMaker/assets/54494639/60fb27b4-dca1-4531-93ea-72678680c259">
+
 
 ---
 
