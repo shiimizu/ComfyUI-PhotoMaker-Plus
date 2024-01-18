@@ -12,6 +12,7 @@ import torch
 from typing import List, Union
 from collections import namedtuple
 from .model import PhotoMakerIDEncoder
+import comfy.sd1_clip
 from comfy.sd1_clip import escape_important, token_weights, unescape_important
 
 Hook = namedtuple('Hook', ['fn', 'module_name', 'target', 'orig_key', 'module_name_nt', 'module_name_unix'])
@@ -111,7 +112,7 @@ def unclip_adm(unclip_conditioning, device, noise_augmentor, noise_augment_merge
 
     return adm_out
 
-def tokenize_with_weights(self, text:str, return_word_ids=False, _tokens=[], return_tokens=False):
+def tokenize_with_weights(self: comfy.sd1_clip.SDTokenizer, text:str, return_word_ids=False, _tokens=[], return_tokens=False):
     '''
     Takes a prompt and converts it to a list of (token, weight, word id) elements.
     Tokens can both be integer tokens and pre computed CLIP tensors.
@@ -308,7 +309,7 @@ def write_to_file_and_return_fn(original_func, source:str, mode='a'):
 
 
 hook_all(hooks=[
-            hook_tokenize_with_weights(),
+            # hook_tokenize_with_weights(),
             hhok_unclip_adm(),
             hook_load_torch_file(),
 ])

@@ -3,10 +3,10 @@
 
 import torch
 import torch.nn as nn
-# from transformers.models.clip.modeling_clip import CLIPVisionModelWithProjection
-# from transformers.models.clip.configuration_clip import CLIPVisionConfig
+from transformers.models.clip.modeling_clip import CLIPVisionModelWithProjection
+from transformers.models.clip.configuration_clip import CLIPVisionConfig
 # from transformers import PretrainedConfig
-from comfy.clip_model import ACTIVATIONS
+# from comfy.clip_model import ACTIVATIONS
 from comfy.clip_model import CLIPVisionModelProjection
 from comfy.ops import manual_cast
 
@@ -18,23 +18,17 @@ VISION_CONFIG_DICT = {
     "patch_size": 14,
     "projection_dim": 768
 }
-act_fn = None
+
 class MLP(nn.Module):
-    def __init__(self, in_dim, out_dim, hidden_dim, op: manual_cast, dtype, device, use_residual=True):
+    def __init__(self, in_dim, out_dim, hidden_dim, op: manual_cast, use_residual=True):
         super().__init__()
         if use_residual:
             assert in_dim == out_dim
-        self.layernorm = op.LayerNorm(in_dim, device=device, dtype=dtype)
-        self.fc1 = op.Linear(in_dim, hidden_dim, device=device, dtype=dtype)
-        self.fc2 = op.Linear(hidden_dim, out_dim, device=device, dtype=dtype)
+        self.layernorm = op.LayerNorm(in_dim)
+        self.fc1 = op.Linear(in_dim, hidden_dim)
+        self.fc2 = op.Linear(hidden_dim, out_dim)
         self.use_residual = use_residual
-        global act_fn
-        self.act_fn = act_fn 
-        # self.layernorm = nn.LayerNorm(in_dim)
-        # self.fc1 = nn.Linear(in_dim, hidden_dim)
-        # self.fc2 = nn.Linear(hidden_dim, out_dim)
-        # self.use_residual = use_residual
-        # self.act_fn = nn.GELU()
+        self.act_fn = nn.GELU()
 
     def forward(self, x):
         residual = x
@@ -48,12 +42,11 @@ class MLP(nn.Module):
 
 
 class FuseModule(nn.Module):
-    def __init__(self, embed_dim, op: manual_cast, dtype, device):
+    def __init__(self, embed_dim, op: manual_cast):
         super().__init__()
-        self.mlp1 = MLP(embed_dim * 2, embed_dim, embed_dim, use_residual=False, op=op, device=device, dtype=dtype)
-        self.mlp2 = MLP(embed_dim, embed_dim, embed_dim, use_residual=True, op=op, device=device, dtype=dtype)
-        self.layer_norm = op.LayerNorm(embed_dim, device=device, dtype=dtype)
-        # self.layer_norm = nn.LayerNorm(embed_dim)
+        self.mlp1 = MLP(embed_dim * 2, embed_dim, embed_dim, use_residual=False, op=op)
+        self.mlp2 = MLP(embed_dim, embed_dim, embed_dim, use_residual=True, op=op)
+        self.layer_norm = nn.LayerNorm(embed_dim)
 
     def fuse_fn(self, prompt_embeds, id_embeds):
         stacked_id_embeds = torch.cat([prompt_embeds, id_embeds], dim=-1)
@@ -102,33 +95,20 @@ class FuseModule(nn.Module):
 class PhotoMakerIDEncoder(CLIPVisionModelProjection):
     def __init__(self, config_dict, dtype, device, op: manual_cast):
         super().__init__(config_dict, dtype, device, op)
-        intermediate_activation = config_dict["hidden_act"]
-        global act_fn
-        act_fn = ACTIVATIONS[intermediate_activation]
-        self.visual_projection_2 = op.Linear(1024, 1280, bias=False, device=device, dtype=dtype)
-        # self.visual_projection_2 = nn.Linear(1024, 1280, bias=False)
-        # self.vision_model = self.vision_model.to(device=device,dtype=dtype)
-        # self.visual_projection = self.visual_projection.to(device=device,dtype=dtype)
-        # self.visual_projection_2 = self.visual_projection_2.to(device=device,dtype=dtype)
-        self.fuse_module = FuseModule(2048, op, device=device, dtype=dtype)
+        self.visual_projection_2 = op.Linear(1024, 1280, bias=False)
+        self.fuse_module = FuseModule(2048, op)
 
     # def forward(self, id_pixel_values, prompt_embeds, class_tokens_mask):
     def forward(self, id_pixel_values, prompt_embeds, class_tokens_mask, *args, **kwargs):
         b, num_inputs, c, h, w = id_pixel_values.shape
         id_pixel_values = id_pixel_values.view(b * num_inputs, c, h, w)
 
-        # CLIPVisionModelWithProjection
+        # # CLIPVisionModelWithProjection
         # x = self.vision_model(id_pixel_values, output_hidden_states=True)
         # shared_id_embeds = x[1].to(device=self.device,dtype=self.dtype)
 
         x = self.vision_model(id_pixel_values, **kwargs)
         shared_id_embeds = x[2]
-        # shared_id_embeds = self.vision_model(id_pixel_values)[2]
-        # shared_id_embeds = self.vision_model(id_pixel_values, intermediate_output=kwargs['intermediate_output'])[1]
-        # shared_id_embeds = self.vision_model(id_pixel_values, kwargs['intermediate_output'])[1]
-        # shared_id_embeds = self.vision_model(*args, **kwargs))[1]
-        # shared_id_embeds = self.vision_model(id_pixel_values)[1]
-        # shared_id_embeds = shared_id_embeds[2] if shared_id_embeds[2] is not None else shared_id_embeds[0]
 
         id_embeds = self.visual_projection(shared_id_embeds)
         id_embeds_2 = self.visual_projection_2(shared_id_embeds)
@@ -137,13 +117,12 @@ class PhotoMakerIDEncoder(CLIPVisionModelProjection):
         id_embeds_2 = id_embeds_2.view(b, num_inputs, 1, -1)
 
         id_embeds = torch.cat((id_embeds, id_embeds_2), dim=-1)
-        prompt_embeds = prompt_embeds[0].to(device=id_embeds.device)
-        class_tokens_mask = class_tokens_mask.to(device=id_embeds.device)
+        prompt_embeds.to(dtype=id_embeds.dtype)
         updated_prompt_embeds = self.fuse_module(prompt_embeds, id_embeds, class_tokens_mask)
 
         return (x[0], x[1], updated_prompt_embeds)
 
-        # CLIPVisionModelWithProjection
+        # # CLIPVisionModelWithProjection
         # return (x.last_hidden_state, x.hidden_states[0], updated_prompt_embeds)
 
 

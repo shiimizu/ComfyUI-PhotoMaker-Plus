@@ -6,7 +6,7 @@ from comfy.clip_vision import ClipVisionModel
 import folder_paths
 from .model import PhotoMakerIDEncoder
 from copy import deepcopy
-from .utils import load_image, hook_all
+from .utils import load_image, hook_all, tokenize_with_weights
 from transformers import CLIPImageProcessor
 from transformers.image_utils import PILImageResampling
 import torch
@@ -89,13 +89,11 @@ class PhotoMakerEncode:
         id_pixel_values = clip_vision.id_image_processor(input_id_images, return_tensors="pt").pixel_values.float()
         id_pixel_values = id_pixel_values.to(device=clip_vision.load_device)
 
-        clip=clip.clone()
         tokens = clip.tokenize(text)
         class_tokens_mask = {}
         for key in tokens:
             clip_tokenizer = getattr(clip.tokenizer, f'clip_{key}', clip.tokenizer)
-            clip_tokenizer.tokenizer.add_tokens([trigger_word], special_tokens=True)
-            ls = clip_tokenizer.tokenize_with_weights(text, return_tokens=True)
+            ls = tokenize_with_weights(clip_tokenizer, text, return_tokens=True)
             # e.g.: [49408]
             class_token = clip_tokenizer.tokenizer(trigger_word)["input_ids"][clip_tokenizer.tokens_start:-1]
 
@@ -116,7 +114,6 @@ class PhotoMakerEncode:
                         ls2[ii-1] = [ls2[ii-1][-1]] * num_id_images
                 elif i not in mask_indices:
                     ids = [(-1, tup[1]) for tup in v]
-                    # print(ls[i])
                     ls2[i] = ids
 
             # expand trigger tokens
@@ -128,8 +125,8 @@ class PhotoMakerEncode:
             token_weight_pairs = [i for j, i in enumerate(ls) if j not in trigger_indices]
             token_weight_pairs_mask = [i for j, i in enumerate(ls2) if j not in trigger_indices]
             # send it back to be batched evenly
-            token_weight_pairs = clip_tokenizer.tokenize_with_weights(text, _tokens=token_weight_pairs)
-            token_weight_pairs_mask = clip_tokenizer.tokenize_with_weights(text, _tokens=token_weight_pairs_mask)
+            token_weight_pairs = tokenize_with_weights(clip_tokenizer, text, _tokens=token_weight_pairs)
+            token_weight_pairs_mask = tokenize_with_weights(clip_tokenizer, text, _tokens=token_weight_pairs_mask)
             tokens[key] = token_weight_pairs
 
             if clip_tokenizer.pad_with_end:
@@ -142,7 +139,7 @@ class PhotoMakerEncode:
             class_tokens_mask[key] = list(map(lambda a:  list(map(lambda b: condition(b), a)), token_weight_pairs_mask))
 
         cond, pooled = clip.encode_from_tokens(tokens, return_pooled=True)
-        prompt_embeds = cond.to(device=clip_vision.load_device).unsqueeze(0)
+        prompt_embeds = cond.to(device=clip_vision.load_device)
         class_tokens_mask = torch.tensor(class_tokens_mask['l']).to(dtype=torch.bool, device=clip_vision.load_device)
         if (trigger_indices_len:=len(trigger_indices)) > 1:
             id_pixel_values = id_pixel_values.repeat([trigger_indices_len] + [1] * (len(id_pixel_values.shape) - 1))
@@ -173,8 +170,8 @@ class PhotoMakerStyles:
                     "style_name": (STYLE_NAMES, {"default": DEFAULT_STYLE_NAME}),
                 },
                 "optional": {
-                    "positive": ("STRING", {"multiline": False, "forceInput": True}),
-                    "negative": ("STRING", {"multiline": False, "forceInput": True}),
+                    "positive": ("STRING", {"multiline": True, "forceInput": True}),
+                    "negative": ("STRING", {"multiline": True, "forceInput": True}),
                 },
             }
     RETURN_TYPES = ("STRING","STRING",)
