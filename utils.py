@@ -2,7 +2,12 @@ import os
 import sys
 import PIL.Image
 import PIL.ImageOps
-import requests
+import inspect
+import importlib
+import types
+import functools
+from textwrap import dedent, indent
+from copy import copy
 import torch
 from typing import List, Union
 from collections import namedtuple
@@ -16,14 +21,29 @@ def hook_clip_model_CLIPVisionModelProjection():
 
 def hhok_unclip_adm():
     import comfy.model_base
-    comfy.model_base.unclip_adm_original = comfy.model_base.unclip_adm
+    if not hasattr(comfy.model_base, 'unclip_adm_original'):
+        comfy.model_base.unclip_adm_original = comfy.model_base.unclip_adm
     return create_hook(unclip_adm, 'comfy.model_base')
 
 def hook_tokenize_with_weights():
     import comfy.sd1_clip
-    comfy.sd1_clip.SDTokenizer.tokenize_with_weights_original = comfy.sd1_clip.SDTokenizer.tokenize_with_weights
+    if not hasattr(comfy.sd1_clip.SDTokenizer, 'tokenize_with_weights_original'):
+        comfy.sd1_clip.SDTokenizer.tokenize_with_weights_original = comfy.sd1_clip.SDTokenizer.tokenize_with_weights
     comfy.sd1_clip.SDTokenizer.tokenize_with_weights = tokenize_with_weights
     return create_hook(tokenize_with_weights, 'comfy.sd1_clip', 'SDTokenizer.tokenize_with_weights')
+
+def hook_load_torch_file():
+    import comfy.utils
+    if not hasattr(comfy.utils, 'load_torch_file_original'):
+        comfy.utils.load_torch_file_original = comfy.utils.load_torch_file
+    replace_str="""
+    if 'lora_weights' in sd:
+        sd = sd['lora_weights']
+    return sd"""
+    source = inspect.getsource(comfy.utils.load_torch_file_original)
+    modified_source = source.replace("return sd", replace_str)
+    fn = write_to_file_and_return_fn(comfy.utils.load_torch_file_original, modified_source, 'w')
+    return create_hook(fn, 'comfy.utils')
 
 def create_hook(fn, module_name, target = None, orig_key = None):
     if target is None: target = fn.__name__
@@ -32,12 +52,11 @@ def create_hook(fn, module_name, target = None, orig_key = None):
     module_name_unix = '/'.join(module_name.split('.'))
     return Hook(fn, module_name, target, orig_key, module_name_nt, module_name_unix)
 
-def hook_all(restore=False):
-    hooks: List[Hook] = [
-        hook_clip_model_CLIPVisionModelProjection(),
-        hook_tokenize_with_weights(),
-        hhok_unclip_adm(),
-    ]
+def hook_all(restore=False, hooks = None):
+    if hooks is None:
+        hooks: List[Hook] = [
+            hook_clip_model_CLIPVisionModelProjection(),
+        ]
     for m in sys.modules.keys():
         for hook in hooks:
             if hook.module_name == m or (os.name != 'nt' and m.endswith(hook.module_name_unix)) or (os.name == 'nt' and m.endswith(hook.module_name_nt)):
@@ -192,6 +211,7 @@ def load_image(image: Union[str, PIL.Image.Image]) -> PIL.Image.Image:
     """
     if isinstance(image, str):
         if image.startswith("http://") or image.startswith("https://"):
+            import requests
             image = PIL.Image.open(requests.get(image, stream=True).raw)
         elif os.path.isfile(image):
             image = PIL.Image.open(image)
@@ -208,3 +228,87 @@ def load_image(image: Union[str, PIL.Image.Image]) -> PIL.Image.Image:
     image = PIL.ImageOps.exif_transpose(image)
     image = image.convert("RGB")
     return image
+
+
+def inject_code(original_func, data, mode='a'):
+    # Get the source code of the original function
+    original_source = inspect.getsource(original_func)
+
+    # Split the source code into lines
+    lines = original_source.split("\n")
+
+    for item in data:
+        # Find the line number of the target line
+        target_line_number = None
+        for i, line in enumerate(lines):
+            if item['target_line'] not in line: continue
+            target_line_number = i + 1
+            if item.get("mode","insert") == "replace":
+                lines[i] = lines[i].replace(item['target_line'], item['code_to_insert'])
+                break
+
+            # Find the indentation of the line where the new code will be inserted
+            indentation = ''
+            for char in line:
+                if char == ' ':
+                    indentation += char
+                else:
+                    break
+            
+            # Indent the new code to match the original
+            code_to_insert = item['code_to_insert']
+            if item.get("dedent",True):
+                code_to_insert = dedent(item['code_to_insert'])
+            code_to_insert = indent(code_to_insert, indentation)
+
+            break
+
+        # Insert the code to be injected after the target line
+        if item.get("mode","insert") == "insert" and target_line_number is not None:
+            lines.insert(target_line_number, code_to_insert)
+
+    # Recreate the modified source code
+    modified_source = "\n".join(lines)
+    modified_source = dedent(modified_source.strip("\n"))
+    return write_to_file_and_return_fn(original_func, modified_source, mode)
+
+def write_to_file_and_return_fn(original_func, source:str, mode='a'):
+    # Write the modified source code to a temporary file so the
+    # source code and stack traces can still be viewed when debugging.
+    custom_name = ".patches.py"
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    temp_file_path = os.path.join(current_dir, custom_name)
+    with open(temp_file_path, mode) as temp_file:
+        temp_file.write(source)
+        temp_file.write("\n")
+        temp_file.flush()
+
+        MODULE_PATH = temp_file.name
+        MODULE_NAME = __name__.split('.')[0].replace('-','_') + "_patch_modules"
+        spec = importlib.util.spec_from_file_location(MODULE_NAME, MODULE_PATH)
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = module
+        spec.loader.exec_module(module)
+
+        # Retrieve the modified function from the module
+        modified_function = getattr(module, original_func.__name__)
+
+    # Adapted from https://stackoverflow.com/a/49077211
+    def copy_func(f, globals=None, module=None, code=None, update_wrapper=True):
+        if globals is None: globals = f.__globals__
+        if code is None: code = f.__code__
+        g = types.FunctionType(code, globals, name=f.__name__,
+                            argdefs=f.__defaults__, closure=f.__closure__)
+        if update_wrapper: g = functools.update_wrapper(g, f)
+        if module is not None: g.__module__ = module
+        g.__kwdefaults__ = copy(f.__kwdefaults__)
+        return g
+        
+    return copy_func(original_func, code=modified_function.__code__, update_wrapper=False)
+
+
+hook_all(hooks=[
+            hook_tokenize_with_weights(),
+            hhok_unclip_adm(),
+            hook_load_torch_file(),
+])

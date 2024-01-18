@@ -11,9 +11,11 @@ from transformers import CLIPImageProcessor
 from transformers.image_utils import PILImageResampling
 import torch
 import os
-from folder_paths import folder_names_and_paths, models_dir, supported_pt_extensions
+from folder_paths import folder_names_and_paths, models_dir, supported_pt_extensions, add_model_folder_path
 
 folder_names_and_paths["photomaker"] = ([os.path.join(models_dir, "photomaker")], supported_pt_extensions)
+add_model_folder_path("loras", folder_names_and_paths["photomaker"][0][0])
+# folder_paths.add_model_folder_path(x, full_path)
 
 class PhotoMakerLoader:
     @classmethod
@@ -84,19 +86,10 @@ class PhotoMakerEncode:
         # Resize to 224x224
         comfy.model_management.load_model_gpu(clip_vision.patcher)
         clip_vision.id_image_processor = CLIPImageProcessor(resample=PILImageResampling.LANCZOS)
-        if not isinstance(input_id_images[0], torch.Tensor):
-            # clip_vision.id_image_processor = CLIPImageProcessor()
-            id_pixel_values = clip_vision.id_image_processor(input_id_images, return_tensors="pt").pixel_values.float()
-            # id_pixel_values = comfy.clip_vision.clip_preprocess(input_id_images[0].to(clip_vision.load_device)).float()
-            # id_pixel_values = self.id_image_processor(input_id_images, return_tensors="pt").pixel_values
-        else:
-            # id_pixel_values = comfy.clip_vision.clip_preprocess(image).float()
-            id_pixel_values = clip_vision.id_image_processor(input_id_images, return_tensors="pt").pixel_values.float()
+        id_pixel_values = clip_vision.id_image_processor(input_id_images, return_tensors="pt").pixel_values.float()
         id_pixel_values = id_pixel_values.to(device=clip_vision.load_device)
 
         clip=clip.clone()
-        trigger_word_tokens = clip.tokenize(trigger_word)
-        class_token = trigger_word_tokens['l'][0][1][0]
         tokens = clip.tokenize(text)
         class_tokens_mask = {}
         for key in tokens:

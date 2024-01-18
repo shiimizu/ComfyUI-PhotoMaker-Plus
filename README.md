@@ -7,16 +7,7 @@ Unofficial implementation of [PhotoMaker](https://github.com/TencentARC/PhotoMak
 
 ---
 
-Download the [model](https://huggingface.co/TencentARC/PhotoMaker) and place it in your `models` folder such as `ComfyUI/models/photomaker`.
-
-Extract the LoRa and place it in your `loras` folder. Enter in the Python interactive console by typing `python` (the `python` you use to launch ComfyUI) in a console and paste the commands below (adjust the file paths):
-```python
-import torch
-from safetensors.torch import save_file
-sd = torch.load("/path/to/photomaker-v1.bin", map_location="cpu")
-save_file(sd["lora_weights"], "ComfyUI/models/loras/photomaker-v1-lora.safetensors")
-exit()
-```
+Download the [model](https://huggingface.co/TencentARC/PhotoMaker) and place it in a `photomaker` folder in your `models` folder such as `ComfyUI/models/photomaker`.
 
 # Citation
 ```bibtex
