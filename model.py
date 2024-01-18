@@ -46,7 +46,7 @@ class FuseModule(nn.Module):
         super().__init__()
         self.mlp1 = MLP(embed_dim * 2, embed_dim, embed_dim, use_residual=False, op=op)
         self.mlp2 = MLP(embed_dim, embed_dim, embed_dim, use_residual=True, op=op)
-        self.layer_norm = nn.LayerNorm(embed_dim)
+        self.layer_norm = op.LayerNorm(embed_dim)
 
     def fuse_fn(self, prompt_embeds, id_embeds):
         stacked_id_embeds = torch.cat([prompt_embeds, id_embeds], dim=-1)

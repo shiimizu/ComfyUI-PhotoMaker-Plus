@@ -191,7 +191,7 @@ NODE_CLASS_MAPPINGS = {
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "PhotoMakerLoader": "PhotoMakerLoader",
-    "PhotoMakerEncode": "PhotoMakerEncode",
-    "PhotoMakerStyles": "PhotoMakerStyles",
+    "PhotoMakerLoader": "Load PhotoMaker",
+    "PhotoMakerEncode": "PhotoMaker Encode",
+    "PhotoMakerStyles": "Apply PhotoMaker styles",
 }

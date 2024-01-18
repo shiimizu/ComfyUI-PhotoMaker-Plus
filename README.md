@@ -1,11 +1,17 @@
-# ComfyUI-PhotoMaker 
+# ComfyUI PhotoMaker 
 
-Unofficial implementation of [PhotoMaker](https://github.com/TencentARC/PhotoMaker) for ComfyUI.
+ComfyUI reference implementation for [PhotoMaker](https://github.com/TencentARC/PhotoMaker) models.
 
-<img width="1261" alt="example" src="https://github.com/shiimizu/ComfyUI-PhotoMaker/assets/54494639/60fb27b4-dca1-4531-93ea-72678680c259">
+PhotoMaker implementation that follows the ComfyUI way of doing things. The code is memory efficient, fast, and shouldn't break with Comfy updates.
 
+<div align="center">
 
----
+  <img width="1261" alt="example workflow" src="https://github.com/shiimizu/ComfyUI-PhotoMaker/assets/54494639/c722d96a-466f-466b-bfd7-eafef9732e24">
+  
+  <p>Example workflow that you can load in ComfyUI.</p>
+</div>
+
+<br>
 
 Download the [model](https://huggingface.co/TencentARC/PhotoMaker) and place it in a `photomaker` folder in your `models` folder such as `ComfyUI/models/photomaker`.
 
