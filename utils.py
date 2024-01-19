@@ -58,7 +58,7 @@ def hook_all(restore=False, hooks = None):
         hooks: List[Hook] = [
             hook_clip_model_CLIPVisionModelProjection(),
         ]
-    for m in sys.modules.keys():
+    for m in list(sys.modules.keys()):
         for hook in hooks:
             if hook.module_name == m or (os.name != 'nt' and m.endswith(hook.module_name_unix)) or (os.name == 'nt' and m.endswith(hook.module_name_nt)):
                 if hasattr(sys.modules[m], hook.target):
@@ -66,6 +66,7 @@ def hook_all(restore=False, hooks = None):
                         if (orig_fn:=getattr(sys.modules[m], hook.target, None)) is not None:
                             setattr(sys.modules[m], hook.orig_key, orig_fn)
                     if restore:
+                        # import pdb;pdb.set_trace()
                         setattr(sys.modules[m], hook.target, getattr(sys.modules[m], hook.orig_key, None))
                     else:
                         setattr(sys.modules[m], hook.target, hook.fn)

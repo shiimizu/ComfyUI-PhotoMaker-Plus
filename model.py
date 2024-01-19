@@ -3,8 +3,8 @@
 
 import torch
 import torch.nn as nn
-from transformers.models.clip.modeling_clip import CLIPVisionModelWithProjection
-from transformers.models.clip.configuration_clip import CLIPVisionConfig
+# from transformers.models.clip.modeling_clip import CLIPVisionModelWithProjection
+# from transformers.models.clip.configuration_clip import CLIPVisionConfig
 # from transformers import PretrainedConfig
 # from comfy.clip_model import ACTIVATIONS
 from comfy.clip_model import CLIPVisionModelProjection

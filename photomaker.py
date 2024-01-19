@@ -29,8 +29,8 @@ class PhotoMakerLoader:
 
     def load_clip(self, clip_name):
         hook_all()
-        comfy.clip_model.CLIPVisionModelProjection_original = comfy.clip_model.CLIPVisionModelProjection
-        comfy.clip_model.CLIPVisionModelProjection = PhotoMakerIDEncoder
+        # comfy.clip_model.CLIPVisionModelProjection_original = comfy.clip_model.CLIPVisionModelProjection
+        # comfy.clip_model.CLIPVisionModelProjection = PhotoMakerIDEncoder
         clip_path = folder_paths.get_full_path("photomaker", clip_name)
         # sd = comfy.clip_vision.load_torch_file(clip_path)
         sd = torch.load(clip_path, map_location="cpu")
@@ -38,7 +38,7 @@ class PhotoMakerLoader:
             sd = sd['id_encoder']
         # clip_vision =  comfy.clip_vision.load_clipvision_from_sd(sd, "id_encoder.", True)
         clip_vision = comfy.clip_vision.load_clipvision_from_sd(sd)
-        comfy.clip_model.CLIPVisionModelProjection = comfy.clip_model.CLIPVisionModelProjection_original
+        # comfy.clip_model.CLIPVisionModelProjection = comfy.clip_model.CLIPVisionModelProjection_original
         hook_all(restore=True)
         return (clip_vision,)
     
@@ -193,5 +193,5 @@ NODE_CLASS_MAPPINGS = {
 NODE_DISPLAY_NAME_MAPPINGS = {
     "PhotoMakerLoader": "Load PhotoMaker",
     "PhotoMakerEncode": "PhotoMaker Encode",
-    "PhotoMakerStyles": "Apply PhotoMaker styles",
+    "PhotoMakerStyles": "Apply PhotoMaker style",
 }
