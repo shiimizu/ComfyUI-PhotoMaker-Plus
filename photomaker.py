@@ -7,6 +7,7 @@ import folder_paths
 from .model import PhotoMakerIDEncoder
 from copy import deepcopy
 from .utils import load_image, hook_all, tokenize_with_weights
+from itertools import zip_longest
 from transformers import CLIPImageProcessor
 from transformers.image_utils import PILImageResampling
 import torch
@@ -15,7 +16,6 @@ from folder_paths import folder_names_and_paths, models_dir, supported_pt_extens
 
 folder_names_and_paths["photomaker"] = ([os.path.join(models_dir, "photomaker")], supported_pt_extensions)
 add_model_folder_path("loras", folder_names_and_paths["photomaker"][0][0])
-# folder_paths.add_model_folder_path(x, full_path)
 
 class PhotoMakerLoader:
     @classmethod
@@ -80,8 +80,8 @@ class PhotoMakerEncode:
 
             input_id_images = [load_image(image_path) for image_path in image_path_list]
         
-        if input_id_images is None:
-            raise ValueError("Provide `image`. Cannot leave `image` undefined for PhotoMaker pipeline.")
+        if input_id_images is None or len(input_id_images) == 0:
+            raise ValueError("No images provided or found.")
         num_id_images = len(input_id_images)
         # Resize to 224x224
         comfy.model_management.load_model_gpu(clip_vision.patcher)
@@ -93,56 +93,64 @@ class PhotoMakerEncode:
         class_tokens_mask = {}
         for key in tokens:
             clip_tokenizer = getattr(clip.tokenizer, f'clip_{key}', clip.tokenizer)
-            ls = tokenize_with_weights(clip_tokenizer, text, return_tokens=True)
-            # e.g.: [49408]
-            class_token = clip_tokenizer.tokenizer(trigger_word)["input_ids"][clip_tokenizer.tokens_start:-1]
+            tkwp = tokenize_with_weights(clip_tokenizer, text, return_tokens=True)
+            # e.g.: 24157
+            class_token = clip_tokenizer.tokenizer(trigger_word)["input_ids"][clip_tokenizer.tokens_start:-1][0]
 
-            # get trigger token indices
-            trigger_indices = []
-            for ix, v in enumerate(ls):
-                ids = [tup[0] for tup in v]
-                if ids == class_token:
-                    trigger_indices.append(ix)
+            tmp=[]
+            mask=[]
+            num = num_id_images
+            num_trigger_tokens_processed = 0
+            for ls in tkwp:
+                # recreate the list of pairs
+                p = []
+                pmask = []
+                # remove consecutive duplicates
+                newls = [ls[0]] + [curr for prev, curr in zip_longest(ls, ls[1:])
+                                        if not (curr and prev and curr[0] == class_token and prev[0] == class_token)]
+                if newls and newls[-1] is None: newls.pop()
+                for pair in newls:
+                    # Non-matches simply get appended to the list.
+                    if pair[0] != class_token:
+                        p.append(pair)
+                        pmask.append(pair)
+                    else:
+                        # Found a match; append it to the previous list or main list's last list
+                        num_trigger_tokens_processed += 1
+                        if p:
+                            # take the last element of the list we're creating and repeat it
+                            pmask[-1] = (-1, pmask[-1][1])
+                            if num-1 > 0:
+                                p.extend([p[-1]] * (num-1))
+                                pmask.extend([( -1, pmask[-1][1]  )] * (num-1))
+                        else:
+                            # The list we're cerating is empty so
+                            # take the last element of the main list and then take its last element and repeat it
+                            if tmp and tmp[-1]:
+                                last_ls = tmp[-1]
+                                last_pair = last_ls[-1]
+                                mask[-1][-1] = (-1, mask[-1][-1][1])
+                                if num-1 > 0:
+                                    last_ls.extend([last_pair] * (num-1))
+                                    mask[-1].extend([ (-1, mask[-1][-1][1]) ] * (num-1))
+                if p: tmp.append(p)
+                if pmask: mask.append(pmask)
+            token_weight_pairs = tmp
+            token_weight_pairs_mask = mask
             
-            # expand trigger tokens and mask
-            ls2 = deepcopy(ls)
-            mask_indices = list(map(lambda i: i-1, trigger_indices))
-            for i, v in enumerate(ls2):
-                if i in trigger_indices:
-                    for ii in trigger_indices:
-                        if ii-1 < 0: continue
-                        ls2[ii-1] = [ls2[ii-1][-1]] * num_id_images
-                elif i not in mask_indices:
-                    ids = [(-1, tup[1]) for tup in v]
-                    ls2[i] = ids
-
-            # expand trigger tokens
-            for ii in trigger_indices:
-                if ii-1 < 0: continue
-                ls[ii-1] = [ls[ii-1][-1]] * num_id_images
-            
-            # remove trigger tokens
-            token_weight_pairs = [i for j, i in enumerate(ls) if j not in trigger_indices]
-            token_weight_pairs_mask = [i for j, i in enumerate(ls2) if j not in trigger_indices]
             # send it back to be batched evenly
             token_weight_pairs = tokenize_with_weights(clip_tokenizer, text, _tokens=token_weight_pairs)
             token_weight_pairs_mask = tokenize_with_weights(clip_tokenizer, text, _tokens=token_weight_pairs_mask)
             tokens[key] = token_weight_pairs
 
-            if clip_tokenizer.pad_with_end:
-                pad_token = clip_tokenizer.end_token
-            else:
-                pad_token = 0
-
             # Finalize the mask
-            condition = lambda b: isinstance(b, tuple) and isinstance(b[0], int) and b[0] != pad_token and b[0] != clip_tokenizer.start_token and b[0] != -1
-            class_tokens_mask[key] = list(map(lambda a:  list(map(lambda b: condition(b), a)), token_weight_pairs_mask))
+            class_tokens_mask[key] = list(map(lambda a:  list(map(lambda b: b[0] < 0, a)), token_weight_pairs_mask))
 
         cond, pooled = clip.encode_from_tokens(tokens, return_pooled=True)
         prompt_embeds = cond.to(device=clip_vision.load_device)
         class_tokens_mask = torch.tensor(class_tokens_mask['l']).to(dtype=torch.bool, device=clip_vision.load_device)
-        if (trigger_indices_len:=len(trigger_indices)) > 1:
-            id_pixel_values = id_pixel_values.repeat([trigger_indices_len] + [1] * (len(id_pixel_values.shape) - 1))
+        if (num_trigger_tokens_processed) > 1:
+            id_pixel_values = id_pixel_values.repeat([num_trigger_tokens_processed] + [1] * (len(id_pixel_values.shape) - 1))
 
         # From clip_vision.encode_image
         out = clip_vision.model(id_pixel_values.unsqueeze(0), prompt_embeds, class_tokens_mask, intermediate_output=-2)
