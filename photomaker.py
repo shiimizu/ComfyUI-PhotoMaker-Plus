@@ -63,7 +63,7 @@ class PhotoMakerEncode:
     CATEGORY = "photomaker"
 
     def encode(self, clip: CLIP, clip_vision: ClipVisionModel, text: str, trigger_word: str, ref_images_path:str, image=None):
-        
+
         input_id_images = image
         if ref_images_path != '':
             input_id_images=ref_images_path
@@ -85,7 +85,7 @@ class PhotoMakerEncode:
         num_id_images = len(input_id_images)
         # Resize to 224x224
         comfy.model_management.load_model_gpu(clip_vision.patcher)
-        clip_vision.id_image_processor = CLIPImageProcessor(resample=PILImageResampling.LANCZOS)
+        clip_vision.id_image_processor = CLIPImageProcessor(resample=PILImageResampling.LANCZOS, do_rescale=ref_images_path != '')
         id_pixel_values = clip_vision.id_image_processor(input_id_images, return_tensors="pt").pixel_values.float()
         id_pixel_values = id_pixel_values.to(device=clip_vision.load_device)
 
