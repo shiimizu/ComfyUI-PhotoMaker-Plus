@@ -1,3 +1,5 @@
+import filecmp
+import hashlib
 import comfy.clip_vision
 import comfy.clip_model
 import comfy.model_management
@@ -13,6 +15,8 @@ from transformers.image_utils import PILImageResampling
 import torch
 import os
 from folder_paths import folder_names_and_paths, models_dir, supported_pt_extensions, add_model_folder_path
+from pathlib import Path
+import shutil
 
 folder_names_and_paths["photomaker"] = ([os.path.join(models_dir, "photomaker")], supported_pt_extensions)
 add_model_folder_path("loras", folder_names_and_paths["photomaker"][0][0])
@@ -63,7 +67,6 @@ class PhotoMakerEncode:
     CATEGORY = "photomaker"
 
     def encode(self, clip: CLIP, clip_vision: ClipVisionModel, text: str, trigger_word: str, ref_images_path:str, image=None):
-        
         input_id_images = image
         if ref_images_path != '':
             input_id_images=ref_images_path
@@ -192,14 +195,54 @@ class PhotoMakerStyles:
         positive, negative = apply_style(style_name, positive, negative)
         return (positive, negative)
 
+
+class LoadRefImage:
+    @classmethod
+    def INPUT_TYPES(s):
+        input_dir = folder_paths.get_input_directory()
+        files = [f for f in os.listdir(input_dir) if os.path.isfile(os.path.join(input_dir, f))]
+        return {"required":
+                    {"image": (sorted(files), {"image_upload": True}),
+                      "cleanup_ref_dir": ("BOOLEAN", {"default": False}),
+                     },
+                    
+                    
+        }
+    RETURN_TYPES = ("STRING",)
+    RETURN_NAMES = ("ref_path",)
+    FUNCTION = "apply"
+
+    CATEGORY = "photomaker"
+
+    def apply(self, image: str,cleanup_ref_dir:bool):
+        input_dir = folder_paths.get_input_directory()
+        photomaker_dir = Path(input_dir) / "photomaker"
+        if photomaker_dir.exists():
+            if cleanup_ref_dir:
+                for p in photomaker_dir.iterdir():
+                    p.unlink()
+        else:
+            photomaker_dir.mkdir()
+        image_path = folder_paths.get_annotated_filepath(image)
+        image_dst_path = photomaker_dir / image
+
+        image_dst_path = str(image_dst_path)
+
+        print(image_path,image_dst_path)
+
+        shutil.copy(image_path,image_dst_path)
+        return (str(photomaker_dir),)
+
 NODE_CLASS_MAPPINGS = {
     "PhotoMakerLoader": PhotoMakerLoader,
     "PhotoMakerEncode": PhotoMakerEncode,
     "PhotoMakerStyles": PhotoMakerStyles,
+    "LoadRefImage": LoadRefImage,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "PhotoMakerLoader": "Load PhotoMaker",
     "PhotoMakerEncode": "PhotoMaker Encode",
     "PhotoMakerStyles": "Apply PhotoMaker style",
+    "LoadRefImage":"Load Ref Images"
 }
