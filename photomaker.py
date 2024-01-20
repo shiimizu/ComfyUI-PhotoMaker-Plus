@@ -209,7 +209,7 @@ class LoadRefImage:
                     
         }
     RETURN_TYPES = ("STRING",)
-    RETURN_NAMES = ("ref_path",)
+    RETURN_NAMES = ("ref_images_path",)
     FUNCTION = "apply"
 
     CATEGORY = "photomaker"
