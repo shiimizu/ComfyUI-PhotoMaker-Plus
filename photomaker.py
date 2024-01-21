@@ -3,16 +3,15 @@ import comfy.clip_model
 import comfy.model_management
 from comfy.sd import CLIP
 from comfy.clip_vision import ClipVisionModel
-import folder_paths
-from .model import PhotoMakerIDEncoder
-from copy import deepcopy
-from .utils import load_image, hook_all, tokenize_with_weights
 from itertools import zip_longest
 from transformers import CLIPImageProcessor
 from transformers.image_utils import PILImageResampling
+import folder_paths
 import torch
 import os
+from .utils import load_image, hook_all, tokenize_with_weights, prepImage, crop_image_pil, LoadImageCustom
 from folder_paths import folder_names_and_paths, models_dir, supported_pt_extensions, add_model_folder_path
+from torch import Tensor
 
 folder_names_and_paths["photomaker"] = ([os.path.join(models_dir, "photomaker")], supported_pt_extensions)
 add_model_folder_path("loras", folder_names_and_paths["photomaker"][0][0])
@@ -20,75 +19,46 @@ add_model_folder_path("loras", folder_names_and_paths["photomaker"][0][0])
 class PhotoMakerLoader:
     @classmethod
     def INPUT_TYPES(s):
-        return {"required": { "clip_name": (folder_paths.get_filename_list("photomaker"), ),
+        return {"required": { "name": (folder_paths.get_filename_list("photomaker"), ),
                              }}
-    RETURN_TYPES = ("CLIP_VISION",)
-    FUNCTION = "load_clip"
+    RETURN_TYPES = ("PHOTOMAKER",)
+    FUNCTION = "load"
 
     CATEGORY = "photomaker"
 
-    def load_clip(self, clip_name):
+    def load(self, name):
         hook_all()
-        # comfy.clip_model.CLIPVisionModelProjection_original = comfy.clip_model.CLIPVisionModelProjection
-        # comfy.clip_model.CLIPVisionModelProjection = PhotoMakerIDEncoder
-        clip_path = folder_paths.get_full_path("photomaker", clip_name)
-        # sd = comfy.clip_vision.load_torch_file(clip_path)
+        clip_path = folder_paths.get_full_path("photomaker", name)
         sd = torch.load(clip_path, map_location="cpu")
-        if 'id_encoder' in sd:
-            sd = sd['id_encoder']
-        # clip_vision =  comfy.clip_vision.load_clipvision_from_sd(sd, "id_encoder.", True)
+        if (id_encoder:=sd.get('id_encoder', None)):
+            sd = id_encoder
         clip_vision = comfy.clip_vision.load_clipvision_from_sd(sd)
-        # comfy.clip_model.CLIPVisionModelProjection = comfy.clip_model.CLIPVisionModelProjection_original
         hook_all(restore=True)
         return (clip_vision,)
     
-    
+
 class PhotoMakerEncode:
     @classmethod
     def INPUT_TYPES(s):
         return {"required": {
                     "clip": ("CLIP",),
-                    "clip_vision": ("CLIP_VISION",),
-                    "text": ("STRING", {"multiline": True, "forceInput": True}),
-                    "trigger_word": ("STRING", {"default": "img"}),
-                    "ref_images_path": ("STRING", {"multiline": False, "placeholder": "optional"}),
-                },
-                "optional": {
+                    "photomaker": ("PHOTOMAKER",),
                     "image": ("IMAGE",),
-                }
+                    "trigger_word": ("STRING", {"default": "img"}),
+                    "text": ("STRING", {"multiline": True}),
+                },
         }
-    RETURN_TYPES = ("CONDITIONING","CLIP_VISION_OUTPUT")
+    RETURN_TYPES = ("CONDITIONING",)
     FUNCTION = "encode"
 
     CATEGORY = "photomaker"
 
-    def encode(self, clip: CLIP, clip_vision: ClipVisionModel, text: str, trigger_word: str, ref_images_path:str, image=None):
-        
-        input_id_images = image
-        if ref_images_path != '':
-            input_id_images=ref_images_path
-            if not isinstance(input_id_images, list):
-                input_id_images = [input_id_images]
-
-            image_basename_list = os.listdir(ref_images_path)
-            #image_path_list = sorted([os.path.join(ref_images_path, basename) for basename in image_basename_list])
-            image_path_list = [
-                os.path.join(ref_images_path, basename) 
-                for basename in image_basename_list
-                if not basename.startswith('.') and basename.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.webp'))  # 只包括有效的图像文件
-            ]
-
-            input_id_images = [load_image(image_path) for image_path in image_path_list]
-        
-        if input_id_images is None or len(input_id_images) == 0:
-            raise ValueError("No images provided or found.")
-        num_id_images = len(input_id_images)
-        # Resize to 224x224
-        comfy.model_management.load_model_gpu(clip_vision.patcher)
-        clip_vision.id_image_processor = CLIPImageProcessor(resample=PILImageResampling.LANCZOS)
-        id_pixel_values = clip_vision.id_image_processor(input_id_images, return_tensors="pt").pixel_values.float()
-        id_pixel_values = id_pixel_values.to(device=clip_vision.load_device)
-
+    @torch.no_grad()
+    def encode(self, clip: CLIP, photomaker: ClipVisionModel, image: Tensor, trigger_word: str, text: str):
+        if (num_id_images:=len(image)) == 0:
+            raise ValueError("No image provided or found.")
+        clip_vision = photomaker
+        trigger_word=trigger_word.strip()
         tokens = clip.tokenize(text)
         class_tokens_mask = {}
         for key in tokens:
@@ -146,21 +116,20 @@ class PhotoMakerEncode:
             # Finalize the mask
             class_tokens_mask[key] = list(map(lambda a:  list(map(lambda b: b[0] < 0, a)), token_weight_pairs_mask))
 
-        cond, pooled = clip.encode_from_tokens(tokens, return_pooled=True)
-        prompt_embeds = cond.to(device=clip_vision.load_device)
-        class_tokens_mask = torch.tensor(class_tokens_mask['l']).to(dtype=torch.bool, device=clip_vision.load_device)
-        if (num_trigger_tokens_processed) > 1:
-            id_pixel_values = id_pixel_values.repeat([num_trigger_tokens_processed] + [1] * (len(id_pixel_values.shape) - 1))
-
-        # From clip_vision.encode_image
-        out = clip_vision.model(id_pixel_values.unsqueeze(0), prompt_embeds, class_tokens_mask, intermediate_output=-2)
-
-        outputs = comfy.clip_vision.Output()
-        outputs["last_hidden_state"] = out[0].to(comfy.model_management.intermediate_device())
-        outputs["penultimate_hidden_states"] = out[1].to(comfy.model_management.intermediate_device())
-        outputs["image_embeds"] = out[2].to(comfy.model_management.intermediate_device())
+        prompt_embeds, pooled = clip.encode_from_tokens(tokens, return_pooled=True)
+        device_orig = prompt_embeds.device
+        first_key = next(iter(class_tokens_mask.keys()))
+        class_tokens_mask = torch.tensor(class_tokens_mask[first_key]).to(dtype=torch.bool, device=photomaker.load_device)
         
-        return ([[outputs.image_embeds, {"pooled_output": pooled}]], outputs)
+        if num_trigger_tokens_processed > 1:
+            image = image.repeat([num_trigger_tokens_processed] + [1] * (len(image.shape) - 1))
+
+        photomaker.model.prompt_embeds = prompt_embeds.to(photomaker.load_device)
+        photomaker.model.class_tokens_mask = class_tokens_mask
+        outputs = clip_vision.encode_image(image)
+        cond = outputs.image_embeds.to(device=device_orig)
+
+        return ([[cond, {"pooled_output": pooled}]],)
 
 
 from .style_template import styles
@@ -183,7 +152,7 @@ class PhotoMakerStyles:
                 },
             }
     RETURN_TYPES = ("STRING","STRING",)
-    RETURN_NAMES = ("positive","negative",)
+    RETURN_NAMES = ("POSITIVE","NEGATIVE",)
     FUNCTION = "apply"
 
     CATEGORY = "photomaker"
@@ -192,14 +161,71 @@ class PhotoMakerStyles:
         positive, negative = apply_style(style_name, positive, negative)
         return (positive, negative)
 
+
+class PrepImagesForClipVisionFromPath:
+    def __init__(self) -> None:
+        self.image_loader = LoadImageCustom()
+        self.load_device = comfy.model_management.text_encoder_device()
+        self.offload_device = comfy.model_management.text_encoder_offload_device()
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required": {
+            "path": ("STRING", {"multiline": False}),
+            "interpolation": (["nearest", "bilinear", "box", "bicubic", "lanczos", "hamming"], {"default": "lanczos"}),
+            "crop_position": (["top", "bottom", "left", "right", "center", "pad"], {"default": "center"}),
+            },
+        }
+
+    RETURN_TYPES = ("IMAGE",)
+    FUNCTION = "prep_image"
+
+    CATEGORY = "ipadapter"
+
+    def prep_image(self, path:str, interpolation:str, crop_position,):
+        image_path_list = []
+        path = path.strip()
+        if path:
+            image_path_list = [path]
+            if not (path.startswith("http://") or path.startswith("https://")) and os.path.isdir(path):
+                image_basename_list = os.listdir(path)
+                image_path_list = [
+                    os.path.join(path, basename) 
+                    for basename in image_basename_list
+                    if not basename.startswith('.') and basename.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.webp'))
+                ]
+        if len(image_path_list) == 0:
+            raise ValueError("No image provided or found.")
+
+        interpolation=interpolation.upper()
+        size = (224, 224)
+        try:
+            input_id_images = [img if (img:=load_image(image_path)).size == size else crop_image_pil(img, crop_position) for image_path in image_path_list]
+            do_rescale = not all(img.size == size for img in input_id_images)
+            resample = getattr(PILImageResampling, interpolation)
+            clip_preprocess = CLIPImageProcessor(resample=resample, do_normalize=False, do_rescale=True, do_resize=True, do_center_crop=True)
+            id_pixel_values = clip_preprocess(input_id_images, return_tensors="pt").pixel_values
+            id_pixel_values = id_pixel_values.movedim(1,-1)
+        except TypeError as err:
+            print('[PhotoMaker]:', err)
+            print('[PhotoMaker]: You may need to update transformers.')
+            input_id_images = [self.image_loader.load_image(image_path)[0] for image_path in image_path_list]
+            do_rescale = not all(img.shape[-3:-3+2] == size for img in input_id_images)
+            if do_rescale:
+                id_pixel_values = torch.cat([prepImage(img, interpolation=interpolation, crop_position=crop_position) for img in input_id_images])
+            else:
+                id_pixel_values = torch.cat(input_id_images)
+        return (id_pixel_values,)
+
 NODE_CLASS_MAPPINGS = {
     "PhotoMakerLoader": PhotoMakerLoader,
     "PhotoMakerEncode": PhotoMakerEncode,
     "PhotoMakerStyles": PhotoMakerStyles,
+    "PrepImagesForClipVisionFromPath": PrepImagesForClipVisionFromPath,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "PhotoMakerLoader": "Load PhotoMaker",
     "PhotoMakerEncode": "PhotoMaker Encode",
-    "PhotoMakerStyles": "Apply PhotoMaker style",
+    "PhotoMakerStyles": "Apply PhotoMaker Style",
+    "PrepImagesForClipVisionFromPath": "Prepare Images For ClipVision From Path",
 }

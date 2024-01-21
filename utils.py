@@ -1,5 +1,6 @@
 import os
 import sys
+import PIL
 import PIL.Image
 import PIL.ImageOps
 import inspect
@@ -14,17 +15,13 @@ from collections import namedtuple
 from .model import PhotoMakerIDEncoder
 import comfy.sd1_clip
 from comfy.sd1_clip import escape_important, token_weights, unescape_important
+import torch.nn.functional as F
+import torchvision.transforms as TT
 
 Hook = namedtuple('Hook', ['fn', 'module_name', 'target', 'orig_key', 'module_name_nt', 'module_name_unix'])
 
 def hook_clip_model_CLIPVisionModelProjection():
     return create_hook(PhotoMakerIDEncoder, 'comfy.clip_model', 'CLIPVisionModelProjection')
-
-def hhok_unclip_adm():
-    import comfy.model_base
-    if not hasattr(comfy.model_base, 'unclip_adm_original'):
-        comfy.model_base.unclip_adm_original = comfy.model_base.unclip_adm
-    return create_hook(unclip_adm, 'comfy.model_base')
 
 def hook_tokenize_with_weights():
     import comfy.sd1_clip
@@ -38,8 +35,8 @@ def hook_load_torch_file():
     if not hasattr(comfy.utils, 'load_torch_file_original'):
         comfy.utils.load_torch_file_original = comfy.utils.load_torch_file
     replace_str="""
-    if 'lora_weights' in sd:
-        sd = sd['lora_weights']
+    if sd.get('id_encoder', None) and (lora_weights:=sd.get('lora_weights', None)):
+        sd = lora_weights
     return sd"""
     source = inspect.getsource(comfy.utils.load_torch_file_original)
     modified_source = source.replace("return sd", replace_str)
@@ -66,52 +63,9 @@ def hook_all(restore=False, hooks = None):
                         if (orig_fn:=getattr(sys.modules[m], hook.target, None)) is not None:
                             setattr(sys.modules[m], hook.orig_key, orig_fn)
                     if restore:
-                        # import pdb;pdb.set_trace()
                         setattr(sys.modules[m], hook.target, getattr(sys.modules[m], hook.orig_key, None))
                     else:
                         setattr(sys.modules[m], hook.target, hook.fn)
-
-
-def unclip_adm(unclip_conditioning, device, noise_augmentor, noise_augment_merge=0.0):
-    adm_inputs = []
-    weights = []
-    noise_aug = []
-    for unclip_cond in unclip_conditioning:
-        for adm_cond in unclip_cond["clip_vision_output"].image_embeds:
-            weight = unclip_cond["strength"]
-            noise_augment = unclip_cond["noise_augmentation"]
-            noise_level = round((noise_augmentor.max_noise_level - 1) * noise_augment)
-            # c_adm, noise_level_emb = noise_augmentor(adm_cond.to(device), noise_level=torch.tensor([noise_level], device=device))
-            # adm_out = torch.cat((c_adm, noise_level_emb), 1) * weight
-
-            # if c_adm.shape[0] > 1:
-            #     c_adm = c_adm[:1, :]
-            # c_adm, noise_level_emb = noise_augmentor(adm_cond.to(device), noise_level=torch.tensor([noise_level], device=device))
-            # adm_out = torch.cat((c_adm, noise_level_emb), 1) * weight
-
-            i=1
-            data_mean = noise_augmentor.data_mean.repeat(1, -(adm_cond.shape[i] // -noise_augmentor.data_mean.shape[1]))[:, :adm_cond.shape[i]]
-            data_std = noise_augmentor.data_std.repeat(1, -(adm_cond.shape[i] // -noise_augmentor.data_std.shape[1]))[:, :adm_cond.shape[i]]
-            noise_augmentor.register_buffer("data_mean", data_mean, persistent=False)
-            noise_augmentor.register_buffer("data_std", data_std, persistent=False)
-            # noise_augmentor.data_mean = data_mean
-            # noise_augmentor.data_std = data_std
-            c_adm, noise_level_emb = noise_augmentor(adm_cond.to(device), noise_level=torch.tensor([noise_level], device=device))
-            tmp = noise_level_emb.repeat(-(c_adm.shape[0] // -noise_level_emb.shape[0]),1)[:c_adm.shape[0]]
-            adm_out = torch.cat((c_adm, tmp), 1) * weight
-
-            weights.append(weight)
-            noise_aug.append(noise_augment)
-            adm_inputs.append(adm_out)
-
-    if len(noise_aug) > 1:
-        adm_out = torch.stack(adm_inputs).sum(0)
-        noise_augment = noise_augment_merge
-        noise_level = round((noise_augmentor.max_noise_level - 1) * noise_augment)
-        c_adm, noise_level_emb = noise_augmentor(adm_out[:, :noise_augmentor.time_embed.dim], noise_level=torch.tensor([noise_level], device=device))
-        adm_out = torch.cat((c_adm, noise_level_emb), 1)
-
-    return adm_out
 
 def tokenize_with_weights(self: comfy.sd1_clip.SDTokenizer, text:str, return_word_ids=False, _tokens=[], return_tokens=False):
     '''
@@ -198,6 +152,25 @@ def tokenize_with_weights(self: comfy.sd1_clip.SDTokenizer, text:str, return_wor
 
     return batched_tokens
 
+def load_pil_image(image: Union[str, PIL.Image.Image]) -> PIL.Image.Image:
+    if isinstance(image, str):
+        if image.startswith("http://") or image.startswith("https://"):
+            import requests
+            img = Image.open(requests.get(image, stream=True).raw)
+        elif os.path.isfile(image):
+            image_path = folder_paths.get_annotated_filepath(image)
+            img = Image.open(image_path)
+        else:
+            raise ValueError(
+                f"Incorrect path or url, URLs must start with `http://` or `https://`, and {image} is not a valid path"
+            )
+    elif isinstance(image, PIL.Image.Image):
+        image = image
+    else:
+        raise ValueError(
+            "Incorrect format used for image. Should be an url linking to an image, a local path, or a PIL image."
+        )
+    return img
 
 # from diffusers.utils import load_image
 def load_image(image: Union[str, PIL.Image.Image]) -> PIL.Image.Image:
@@ -211,26 +184,141 @@ def load_image(image: Union[str, PIL.Image.Image]) -> PIL.Image.Image:
         `PIL.Image.Image`:
             A PIL Image.
     """
-    if isinstance(image, str):
-        if image.startswith("http://") or image.startswith("https://"):
-            import requests
-            image = PIL.Image.open(requests.get(image, stream=True).raw)
-        elif os.path.isfile(image):
-            image = PIL.Image.open(image)
-        else:
-            raise ValueError(
-                f"Incorrect path or url, URLs must start with `http://` or `https://`, and {image} is not a valid path"
-            )
-    elif isinstance(image, PIL.Image.Image):
-        image = image
-    else:
-        raise ValueError(
-            "Incorrect format used for image. Should be an url linking to an image, a local path, or a PIL image."
-        )
+    image = load_pil_image(image)
     image = PIL.ImageOps.exif_transpose(image)
     image = image.convert("RGB")
     return image
 
+from PIL import Image, ImageSequence, ImageOps
+import numpy as np
+import folder_paths
+from nodes import LoadImage
+class LoadImageCustom(LoadImage):
+    def load_image(self, image):
+        # image_path = folder_paths.get_annotated_filepath(image)
+        # img = Image.open(image_path)
+        img = load_pil_image(image)
+        output_images = []
+        output_masks = []
+        for i in ImageSequence.Iterator(img):
+            i = ImageOps.exif_transpose(i)
+            if i.mode == 'I':
+                i = i.point(lambda i: i * (1 / 255))
+            image = i.convert("RGB")
+            image = np.array(image).astype(np.float32) / 255.0
+            image = torch.from_numpy(image)[None,]
+            if 'A' in i.getbands():
+                mask = np.array(i.getchannel('A')).astype(np.float32) / 255.0
+                mask = 1. - torch.from_numpy(mask)
+            else:
+                mask = torch.zeros((64,64), dtype=torch.float32, device="cpu")
+            output_images.append(image)
+            output_masks.append(mask.unsqueeze(0))
+
+        if len(output_images) > 1:
+            output_image = torch.cat(output_images, dim=0)
+            output_mask = torch.cat(output_masks, dim=0)
+        else:
+            output_image = output_images[0]
+            output_mask = output_masks[0]
+
+        return (output_image, output_mask)
+
+def crop_image_pil(image, crop_position):
+    """
+    Crop a PIL image based on the specified crop_position.
+
+    Parameters:
+    - image: PIL Image object
+    - crop_position: One of "top", "bottom", "left", "right", "center", or "pad"
+
+    Returns:
+    - Cropped PIL Image object
+    """
+
+    width, height = image.size
+    left, top, right, bottom = 0, 0, width, height
+
+    if "pad" in crop_position:
+        target_length = max(width, height)
+        pad_l = max((target_length - width) // 2, 0)
+        pad_t = max((target_length - height) // 2, 0)
+        return ImageOps.expand(image, border=(pad_l, pad_t, target_length - width - pad_l, target_length - height - pad_t), fill=0)
+    else:
+        crop_size = min(width, height)
+        x = (width - crop_size) // 2
+        y = (height - crop_size) // 2
+
+        if "top" in crop_position:
+            bottom = top + crop_size
+        elif "bottom" in crop_position:
+            top = height - crop_size
+            bottom = height
+        elif "left" in crop_position:
+            right = left + crop_size
+        elif "right" in crop_position:
+            left = width - crop_size
+            right = width
+
+        return image.crop((left, top, right, bottom))
+
+def prepImages(images, *args, **kwargs):
+    to_tensor = TT.ToTensor()
+    images_ = []
+    for img in images:
+        image = to_tensor(img)
+        if len(image.shape) <= 3: image.unsqueeze_(0)
+        images_.append(prepImage(image.movedim(1,-1), *args, **kwargs))
+    return torch.cat(images_)
+
+def prepImage(image, interpolation="LANCZOS", crop_position="center", size=(224,224), sharpening=0.0, padding=0):
+    _, oh, ow, _ = image.shape
+    output = image.permute([0,3,1,2])
+
+    if "pad" in crop_position:
+        target_length = max(oh, ow)
+        pad_l = (target_length - ow) // 2
+        pad_r = (target_length - ow) - pad_l
+        pad_t = (target_length - oh) // 2
+        pad_b = (target_length - oh) - pad_t
+        output = F.pad(output, (pad_l, pad_r, pad_t, pad_b), value=0, mode="constant")
+    else:
+        crop_size = min(oh, ow)
+        x = (ow-crop_size) // 2
+        y = (oh-crop_size) // 2
+        if "top" in crop_position:
+            y = 0
+        elif "bottom" in crop_position:
+            y = oh-crop_size
+        elif "left" in crop_position:
+            x = 0
+        elif "right" in crop_position:
+            x = ow-crop_size
+        
+        x2 = x+crop_size
+        y2 = y+crop_size
+
+        # crop
+        output = output[:, :, y:y2, x:x2]
+
+    # resize (apparently PIL resize is better than torchvision interpolate)
+    imgs = []
+    to_PIL_image = TT.ToPILImage()
+    to_tensor = TT.ToTensor()
+    for i in range(output.shape[0]):
+        img = to_PIL_image(output[i])
+        img = img.resize(size, resample=PIL.Image.Resampling[interpolation])
+        imgs.append(to_tensor(img))
+    output = torch.stack(imgs, dim=0)
+
+    imgs = None # zelous GC
+    
+    if padding > 0:
+        output = F.pad(output, (padding, padding, padding, padding), value=255, mode="constant")
+
+    output = output.permute([0,2,3,1])
+
+    return output
 
 def inject_code(original_func, data, mode='a'):
     # Get the source code of the original function
@@ -311,6 +399,5 @@ def write_to_file_and_return_fn(original_func, source:str, mode='a'):
 
 hook_all(hooks=[
             # hook_tokenize_with_weights(),
-            hhok_unclip_adm(),
             hook_load_torch_file(),
 ])
