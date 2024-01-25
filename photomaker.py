@@ -49,15 +49,14 @@ class PhotoMakerEncodePlus:
                 },
         }
     RETURN_TYPES = ("CONDITIONING",)
-    FUNCTION = "encode"
+    FUNCTION = "apply_photomaker"
 
     CATEGORY = "PhotoMaker"
 
     @torch.no_grad()
-    def encode(self, clip: CLIP, photomaker: PhotoMakerIDEncoder, image: Tensor, trigger_word: str, text: str):
+    def apply_photomaker(self, clip: CLIP, photomaker: PhotoMakerIDEncoder, image: Tensor, trigger_word: str, text: str):
         if (num_id_images:=len(image)) == 0:
             raise ValueError("No image provided or found.")
-        clip_vision = photomaker
         trigger_word=trigger_word.strip()
         tokens = clip.tokenize(text)
         class_tokens_mask = {}
@@ -182,11 +181,11 @@ class PrepImagesForClipVisionFromPath:
         }
 
     RETURN_TYPES = ("IMAGE",)
-    FUNCTION = "prep_image"
+    FUNCTION = "prep_images_for_clip_vision_from_path"
 
     CATEGORY = "ipadapter"
 
-    def prep_image(self, path:str, interpolation:str, crop_position,):
+    def prep_images_for_clip_vision_from_path(self, path:str, interpolation:str, crop_position,):
         image_path_list = []
         path = path.strip()
         if path:
@@ -231,7 +230,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "PhotoMakerLoader": "Load PhotoMaker",
     "PhotoMakerEncodePlus": "PhotoMaker Encode Plus",
     "PhotoMakerStyles": "Apply PhotoMaker Style",
-    "PrepImagesForClipVisionFromPath": "Prepare Images For ClipVision From Path",
+    "PrepImagesForClipVisionFromPath": "Prepare Images For CLIP Vision From Path",
 }
 
 try:
