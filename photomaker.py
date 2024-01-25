@@ -1,15 +1,16 @@
 import comfy.clip_vision
 import comfy.clip_model
 import comfy.model_management
+import comfy.utils
 from comfy.sd import CLIP
-from comfy.clip_vision import ClipVisionModel
 from itertools import zip_longest
 from transformers import CLIPImageProcessor
 from transformers.image_utils import PILImageResampling
 import folder_paths
 import torch
 import os
-from .utils import load_image, hook_all, tokenize_with_weights, prepImage, crop_image_pil, LoadImageCustom
+from .model import PhotoMakerIDEncoder
+from .utils import load_image, tokenize_with_weights, prepImage, crop_image_pil, LoadImageCustom
 from folder_paths import folder_names_and_paths, models_dir, supported_pt_extensions, add_model_folder_path
 from torch import Tensor
 
@@ -19,25 +20,24 @@ add_model_folder_path("loras", folder_names_and_paths["photomaker"][0][0])
 class PhotoMakerLoader:
     @classmethod
     def INPUT_TYPES(s):
-        return {"required": { "name": (folder_paths.get_filename_list("photomaker"), ),
+        return {"required": { "photomaker_model_name": (folder_paths.get_filename_list("photomaker"), ),
                              }}
     RETURN_TYPES = ("PHOTOMAKER",)
-    FUNCTION = "load"
+    FUNCTION = "load_photomaker_model"
 
-    CATEGORY = "photomaker"
+    CATEGORY = "PhotoMaker"
 
-    def load(self, name):
-        hook_all()
-        clip_path = folder_paths.get_full_path("photomaker", name)
-        sd = torch.load(clip_path, map_location="cpu")
-        if (id_encoder:=sd.get('id_encoder', None)):
-            sd = id_encoder
-        clip_vision = comfy.clip_vision.load_clipvision_from_sd(sd)
-        hook_all(restore=True)
-        return (clip_vision,)
-    
+    def load_photomaker_model(self, photomaker_model_name):
+        photomaker_model_path = folder_paths.get_full_path("photomaker", photomaker_model_name)
+        photomaker_model = PhotoMakerIDEncoder()
+        data = comfy.utils.load_torch_file(photomaker_model_path, safe_load=True)
+        if "id_encoder" in data:
+            data = data["id_encoder"]
+        photomaker_model.load_state_dict(data)
+        return (photomaker_model,)
 
-class PhotoMakerEncode:
+
+class PhotoMakerEncodePlus:
     @classmethod
     def INPUT_TYPES(s):
         return {"required": {
@@ -45,16 +45,16 @@ class PhotoMakerEncode:
                     "photomaker": ("PHOTOMAKER",),
                     "image": ("IMAGE",),
                     "trigger_word": ("STRING", {"default": "img"}),
-                    "text": ("STRING", {"multiline": True}),
+                    "text": ("STRING", {"multiline": True, "default": "photograph of a man img"}),
                 },
         }
     RETURN_TYPES = ("CONDITIONING",)
     FUNCTION = "encode"
 
-    CATEGORY = "photomaker"
+    CATEGORY = "PhotoMaker"
 
     @torch.no_grad()
-    def encode(self, clip: CLIP, photomaker: ClipVisionModel, image: Tensor, trigger_word: str, text: str):
+    def encode(self, clip: CLIP, photomaker: PhotoMakerIDEncoder, image: Tensor, trigger_word: str, text: str):
         if (num_id_images:=len(image)) == 0:
             raise ValueError("No image provided or found.")
         clip_vision = photomaker
@@ -117,34 +117,39 @@ class PhotoMakerEncode:
             class_tokens_mask[key] = list(map(lambda a:  list(map(lambda b: b[0] < 0, a)), token_weight_pairs_mask))
 
         prompt_embeds, pooled = clip.encode_from_tokens(tokens, return_pooled=True)
+        cond = prompt_embeds
         device_orig = prompt_embeds.device
         first_key = next(iter(class_tokens_mask.keys()))
-        class_tokens_mask = torch.tensor(class_tokens_mask[first_key]).to(dtype=torch.bool, device=photomaker.load_device)
-        
+        class_tokens_mask = class_tokens_mask[first_key]
         if num_trigger_tokens_processed > 1:
             image = image.repeat([num_trigger_tokens_processed] + [1] * (len(image.shape) - 1))
 
-        photomaker.model.prompt_embeds = prompt_embeds.to(photomaker.load_device)
-        photomaker.model.class_tokens_mask = class_tokens_mask
-        outputs = clip_vision.encode_image(image)
-        cond = outputs.image_embeds.to(device=device_orig)
+        photomaker = photomaker.to(device=photomaker.load_device)
+
+        _, h, w, _ = image.shape
+        do_resize = (h, w) != (224, 224)
+        image_bak = image
+        try:
+            if do_resize:
+                clip_preprocess = CLIPImageProcessor(resample=PILImageResampling.LANCZOS, do_normalize=False, do_rescale=False, do_convert_rgb=False)
+                image = clip_preprocess(image, return_tensors="pt").pixel_values.movedim(1,-1)
+        except RuntimeError as e:
+            image = image_bak
+        pixel_values = comfy.clip_vision.clip_preprocess(image.to(photomaker.load_device)).float()
+        cond = photomaker(id_pixel_values=pixel_values.unsqueeze(0), prompt_embeds=cond.to(photomaker.load_device),
+                        class_tokens_mask=torch.tensor(class_tokens_mask, dtype=torch.bool, device=photomaker.load_device).unsqueeze(0))
+        cond = cond.to(device=device_orig)
 
         return ([[cond, {"pooled_output": pooled}]],)
 
 
 from .style_template import styles
-STYLE_NAMES = list(styles.keys())
-DEFAULT_STYLE_NAME = "Photographic (Default)"
-
-def apply_style(style_name: str, positive: str, negative: str = "") -> tuple[str, str]:
-        p, n = styles.get(style_name, styles[DEFAULT_STYLE_NAME])
-        return p.replace("{prompt}", positive), n + ' ' + negative
 
 class PhotoMakerStyles:
     @classmethod
     def INPUT_TYPES(s):
         return {"required": {
-                    "style_name": (STYLE_NAMES, {"default": DEFAULT_STYLE_NAME}),
+                    "style_name": (list(styles.keys()), {"default": "Photographic (Default)"}),
                 },
                 "optional": {
                     "positive": ("STRING", {"multiline": True, "forceInput": True}),
@@ -153,13 +158,13 @@ class PhotoMakerStyles:
             }
     RETURN_TYPES = ("STRING","STRING",)
     RETURN_NAMES = ("POSITIVE","NEGATIVE",)
-    FUNCTION = "apply"
+    FUNCTION = "apply_photomaker_style"
 
-    CATEGORY = "photomaker"
+    CATEGORY = "PhotoMaker"
 
-    def apply(self, style_name, positive: str = '', negative: str = ''):
-        positive, negative = apply_style(style_name, positive, negative)
-        return (positive, negative)
+    def apply_photomaker_style(self, style_name, positive: str = '', negative: str = ''):
+        p, n = styles.get(style_name, "Photographic (Default)")
+        return p.replace("{prompt}", positive), n + ' ' + negative
 
 
 class PrepImagesForClipVisionFromPath:
@@ -200,17 +205,16 @@ class PrepImagesForClipVisionFromPath:
         size = (224, 224)
         try:
             input_id_images = [img if (img:=load_image(image_path)).size == size else crop_image_pil(img, crop_position) for image_path in image_path_list]
-            do_rescale = not all(img.size == size for img in input_id_images)
+            do_resize = not all(img.size == size for img in input_id_images)
             resample = getattr(PILImageResampling, interpolation)
-            clip_preprocess = CLIPImageProcessor(resample=resample, do_normalize=False, do_rescale=True, do_resize=True, do_center_crop=True)
-            id_pixel_values = clip_preprocess(input_id_images, return_tensors="pt").pixel_values
-            id_pixel_values = id_pixel_values.movedim(1,-1)
+            clip_preprocess = CLIPImageProcessor(resample=resample, do_normalize=False, do_resize=do_resize)
+            id_pixel_values = clip_preprocess(input_id_images, return_tensors="pt").pixel_values.movedim(1,-1)
         except TypeError as err:
             print('[PhotoMaker]:', err)
             print('[PhotoMaker]: You may need to update transformers.')
             input_id_images = [self.image_loader.load_image(image_path)[0] for image_path in image_path_list]
-            do_rescale = not all(img.shape[-3:-3+2] == size for img in input_id_images)
-            if do_rescale:
+            do_resize = not all(img.shape[-3:-3+2] == size for img in input_id_images)
+            if do_resize:
                 id_pixel_values = torch.cat([prepImage(img, interpolation=interpolation, crop_position=crop_position) for img in input_id_images])
             else:
                 id_pixel_values = torch.cat(input_id_images)
@@ -218,14 +222,21 @@ class PrepImagesForClipVisionFromPath:
 
 NODE_CLASS_MAPPINGS = {
     "PhotoMakerLoader": PhotoMakerLoader,
-    "PhotoMakerEncode": PhotoMakerEncode,
+    "PhotoMakerEncodePlus": PhotoMakerEncodePlus,
     "PhotoMakerStyles": PhotoMakerStyles,
     "PrepImagesForClipVisionFromPath": PrepImagesForClipVisionFromPath,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "PhotoMakerLoader": "Load PhotoMaker",
-    "PhotoMakerEncode": "PhotoMaker Encode",
+    "PhotoMakerEncodePlus": "PhotoMaker Encode Plus",
     "PhotoMakerStyles": "Apply PhotoMaker Style",
     "PrepImagesForClipVisionFromPath": "Prepare Images For ClipVision From Path",
 }
+
+try:
+    import comfy_extras
+    if hasattr(comfy_extras, 'nodes_photomaker'):
+        NODE_CLASS_MAPPINGS.pop('PhotoMakerLoader', None)
+        NODE_DISPLAY_NAME_MAPPINGS.pop('PhotoMakerLoader', None)
+except: ...
