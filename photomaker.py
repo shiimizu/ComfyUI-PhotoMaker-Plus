@@ -219,23 +219,22 @@ class PrepImagesForClipVisionFromPath:
                 id_pixel_values = torch.cat(input_id_images)
         return (id_pixel_values,)
 
+supported = False
+try:
+    from comfy_extras.nodes_photomaker import PhotoMakerLoader as _PhotoMakerLoader
+    supported = True
+except: ...
+
 NODE_CLASS_MAPPINGS = {
-    "PhotoMakerLoader": PhotoMakerLoader,
+   **({} if supported else {"PhotoMakerLoader": PhotoMakerLoader}),
     "PhotoMakerEncodePlus": PhotoMakerEncodePlus,
     "PhotoMakerStyles": PhotoMakerStyles,
     "PrepImagesForClipVisionFromPath": PrepImagesForClipVisionFromPath,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "PhotoMakerLoader": "Load PhotoMaker",
+   **({} if supported else {"PhotoMakerLoader": "Load PhotoMaker"}),
     "PhotoMakerEncodePlus": "PhotoMaker Encode Plus",
     "PhotoMakerStyles": "Apply PhotoMaker Style",
     "PrepImagesForClipVisionFromPath": "Prepare Images For CLIP Vision From Path",
 }
-
-try:
-    import comfy_extras
-    if hasattr(comfy_extras, 'nodes_photomaker'):
-        NODE_CLASS_MAPPINGS.pop('PhotoMakerLoader', None)
-        NODE_DISPLAY_NAME_MAPPINGS.pop('PhotoMakerLoader', None)
-except: ...
