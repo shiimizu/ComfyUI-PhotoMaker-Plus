@@ -35,19 +35,20 @@ def hook_load_torch_file():
     if not hasattr(comfy.utils, 'load_torch_file_original'):
         comfy.utils.load_torch_file_original = comfy.utils.load_torch_file
     replace_str=f"""
-    def find_outer_instance(target:str, target_type):
-        import inspect
-        frame = inspect.currentframe()
-        i = 0
-        while frame and i < 5:
-            if (found:=frame.f_locals.get(target, None)) is not None:
-                if isinstance(found, target_type):
-                    return found
-            frame = frame.f_back
-            i += 1
-        return None
-    if sd.get('id_encoder', None) and (lora_weights:=sd.get('lora_weights', None)) and len(sd) == 2 and find_outer_instance('lora_name', str) is not None:
-        sd = lora_weights
+    if sd.get('id_encoder', None) and (lora_weights:=sd.get('lora_weights', None)) and len(sd) == 2:
+        def find_outer_instance(target:str, target_type):
+            import inspect
+            frame = inspect.currentframe()
+            i = 0
+            while frame and i < 5:
+                if (found:=frame.f_locals.get(target, None)) is not None:
+                    if isinstance(found, target_type):
+                        return found
+                frame = frame.f_back
+                i += 1
+            return None
+        if find_outer_instance('lora_name', str) is not None:
+            sd = lora_weights
     return sd"""
     source = inspect.getsource(comfy.utils.load_torch_file_original)
     modified_source = source.replace("return sd", replace_str)
