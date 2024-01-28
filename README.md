@@ -16,20 +16,19 @@ PhotoMaker implementation that follows the ComfyUI way of doing things. The code
 ## Installation
 
 1. Install [ComfyUI](https://github.com/comfyanonymous/ComfyUI).
-2. Clone this repo into `custom_nodes` by running the following commands in a terminal:
+2. Install through [ComfyUI Manager](https://github.com/ltdrdata/ComfyUI-Manager) or clone this repo into `custom_nodes` by running the following commands in a terminal:
     ```bash
     cd ComfyUI/custom_nodes
     git clone https://github.com/shiimizu/ComfyUI-PhotoMaker-Plus.git
     ```
-
-Download the model from [huggingface](https://huggingface.co/TencentARC/PhotoMaker) and place it in a `photomaker` folder in your `models` folder such as `ComfyUI/models/photomaker`.
+3. Download the model from [Hugging Face](https://huggingface.co/TencentARC/PhotoMaker) and place it in a `photomaker` folder in your `models` folder such as `ComfyUI/models/photomaker`.
 
 ## Features of this `Plus` version
 
 * Better face resemblance by using `CLIPImageProcessor` like in the original code.
 * Automatic PhotoMaker LoRA detection and loading in the LoraLoader nodes.
-* Customizable `trigger_word` token
-* Allows multiple `trigger_word` tokens in the prompt
+* Customizable trigger word
+* Allows multiple trigger words in the prompt
 * Extra nodes such as `PhotoMakerStyles` and `PrepImagesForClipVisionFromPath`
 
 ## Important news
