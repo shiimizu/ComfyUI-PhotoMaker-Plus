@@ -108,8 +108,8 @@ class PhotoMakerEncodePlus:
             token_weight_pairs_mask = mask
             
             # send it back to be batched evenly
-            token_weight_pairs = tokenize_with_weights(clip_tokenizer, text, _tokens=token_weight_pairs)
-            token_weight_pairs_mask = tokenize_with_weights(clip_tokenizer, text, _tokens=token_weight_pairs_mask)
+            token_weight_pairs = tokenize_with_weights(clip_tokenizer, text, tokens=token_weight_pairs)
+            token_weight_pairs_mask = tokenize_with_weights(clip_tokenizer, text, tokens=token_weight_pairs_mask)
             tokens[key] = token_weight_pairs
 
             # Finalize the mask

@@ -34,7 +34,7 @@ def hook_load_torch_file():
     import comfy.utils
     if not hasattr(comfy.utils, 'load_torch_file_original'):
         comfy.utils.load_torch_file_original = comfy.utils.load_torch_file
-    replace_str=f"""
+    replace_str="""
     if sd.get('id_encoder', None) and (lora_weights:=sd.get('lora_weights', None)) and len(sd) == 2:
         def find_outer_instance(target:str, target_type):
             import inspect
@@ -79,7 +79,7 @@ def hook_all(restore=False, hooks = None):
                     else:
                         setattr(sys.modules[m], hook.target, hook.fn)
 
-def tokenize_with_weights(self: comfy.sd1_clip.SDTokenizer, text:str, return_word_ids=False, _tokens=[], return_tokens=False):
+def tokenize_with_weights(self: comfy.sd1_clip.SDTokenizer, text:str, return_word_ids=False, tokens=None, return_tokens=False):
     '''
     Takes a prompt and converts it to a list of (token, weight, word id) elements.
     Tokens can both be integer tokens and pre computed CLIP tensors.
@@ -91,8 +91,9 @@ def tokenize_with_weights(self: comfy.sd1_clip.SDTokenizer, text:str, return_wor
     else:
         pad_token = 0
 
-    tokens = _tokens
-    if len(_tokens) == 0:
+    if tokens is None:
+        tokens = []
+    if not tokens:
         text = escape_important(text)
         parsed_weights = token_weights(text, 1.0)
 
