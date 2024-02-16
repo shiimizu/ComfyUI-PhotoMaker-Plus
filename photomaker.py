@@ -6,6 +6,7 @@ from comfy.sd import CLIP
 from itertools import zip_longest
 from transformers import CLIPImageProcessor
 from transformers.image_utils import PILImageResampling
+from collections import Counter
 import folder_paths
 import torch
 import os
@@ -13,6 +14,7 @@ from .model import PhotoMakerIDEncoder
 from .utils import load_image, tokenize_with_weights, prepImage, crop_image_pil, LoadImageCustom
 from folder_paths import folder_names_and_paths, models_dir, supported_pt_extensions, add_model_folder_path
 from torch import Tensor
+import hashlib
 
 folder_names_and_paths["photomaker"] = ([os.path.join(models_dir, "photomaker")], supported_pt_extensions)
 add_model_folder_path("loras", folder_names_and_paths["photomaker"][0][0])
@@ -165,7 +167,6 @@ class PhotoMakerStyles:
         p, n = styles.get(style_name, "Photographic (Default)")
         return p.replace("{prompt}", positive), n + ' ' + negative
 
-
 class PrepImagesForClipVisionFromPath:
     def __init__(self) -> None:
         self.image_loader = LoadImageCustom()
@@ -180,12 +181,32 @@ class PrepImagesForClipVisionFromPath:
             },
         }
 
+    @classmethod
+    def IS_CHANGED(s, path:str, interpolation, crop_position):
+        image_path_list = s.get_images_paths(path)
+        hashes = []
+        for image_path in image_path_list:
+            if not (path.startswith("http://") or path.startswith("https://")):
+                m = hashlib.sha256()
+                with open(image_path, 'rb') as f:
+                    m.update(f.read())
+                hashes.append(m.digest().hex())
+        return Counter(hashes)
+
+    @classmethod
+    def VALIDATE_INPUTS(s, path:str, interpolation, crop_position):
+        image_path_list = s.get_images_paths(path)
+        if len(image_path_list) == 0:
+            return "No image provided or found."
+        return True
+
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "prep_images_for_clip_vision_from_path"
 
     CATEGORY = "ipadapter"
 
-    def prep_images_for_clip_vision_from_path(self, path:str, interpolation:str, crop_position,):
+    @classmethod
+    def get_images_paths(self, path:str):
         image_path_list = []
         path = path.strip()
         if path:
@@ -195,8 +216,12 @@ class PrepImagesForClipVisionFromPath:
                 image_path_list = [
                     os.path.join(path, basename) 
                     for basename in image_basename_list
-                    if not basename.startswith('.') and basename.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.webp'))
+                    if not basename.startswith('.') and basename.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.webp', '.gif'))
                 ]
+        return image_path_list
+
+    def prep_images_for_clip_vision_from_path(self, path:str, interpolation:str, crop_position,):
+        image_path_list = self.get_images_paths(path)
         if len(image_path_list) == 0:
             raise ValueError("No image provided or found.")
 
