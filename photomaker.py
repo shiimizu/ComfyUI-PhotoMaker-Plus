@@ -47,7 +47,7 @@ class PhotoMakerEncodePlus:
                     "photomaker": ("PHOTOMAKER",),
                     "image": ("IMAGE",),
                     "trigger_word": ("STRING", {"default": "img"}),
-                    "text": ("STRING", {"multiline": True, "default": "photograph of a man img"}),
+                    "text": ("STRING", {"multiline": True, "default": "photograph of a man img", "dynamicPrompts": True}),
                 },
         }
     RETURN_TYPES = ("CONDITIONING",)
@@ -153,8 +153,8 @@ class PhotoMakerStyles:
                     "style_name": (list(styles.keys()), {"default": "Photographic (Default)"}),
                 },
                 "optional": {
-                    "positive": ("STRING", {"multiline": True, "forceInput": True}),
-                    "negative": ("STRING", {"multiline": True, "forceInput": True}),
+                    "positive": ("STRING", {"multiline": True, "forceInput": True, "dynamicPrompts": True}),
+                    "negative": ("STRING", {"multiline": True, "forceInput": True, "dynamicPrompts": True}),
                 },
             }
     RETURN_TYPES = ("STRING","STRING",)
