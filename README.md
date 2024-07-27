@@ -6,12 +6,9 @@ PhotoMaker implementation that follows the ComfyUI way of doing things. The code
 
 <div align="center">
 
-  <img width="1261" alt="example workflow" src="https://github.com/shiimizu/ComfyUI-PhotoMaker/assets/54494639/a8320460-a8e0-46df-9780-66a70631e989">
+  <img width="1261" alt="example workflow" src="https://github.com/user-attachments/assets/412741f1-49de-4bf0-9101-82e1e205a133">
   
-  <p>↑ Example workflow that you can save and load in ComfyUI. ↑</p>
 </div>
-
-<br>
 
 ## Installation
 
@@ -28,7 +25,7 @@ PhotoMaker implementation that follows the ComfyUI way of doing things. The code
 ## Features of this `Plus` version
 
 * Better face resemblance by using `CLIPImageProcessor` like in the original code.
-* Automatic PhotoMaker LoRA detection and loading in the LoraLoader nodes.
+* Automatic PhotoMaker LoRA detection & loading via the LoraLoader nodes.
 * Customizable trigger word
 * Allows multiple trigger words in the prompt
 * Extra nodes such as `PhotoMakerStyles` and `PrepImagesForClipVisionFromPath`
