@@ -11,15 +11,22 @@ import folder_paths
 import torch
 import os
 from .model import PhotoMakerIDEncoder
+from .model_v2 import PhotoMakerIDEncoder_CLIPInsightfaceExtendtoken
 from .utils import load_image, tokenize_with_weights, prepImage, crop_image_pil, LoadImageCustom
 from folder_paths import folder_names_and_paths, models_dir, supported_pt_extensions, add_model_folder_path
 from torch import Tensor
 import hashlib
+from typing import Union
+from .insightface_package import FaceAnalysis2, analyze_faces, insightface_loader
+import numpy as np
+import torchvision.transforms.v2 as T
+
+INSIGHTFACE_DIR = os.path.join(models_dir, "insightface")
 
 folder_names_and_paths["photomaker"] = ([os.path.join(models_dir, "photomaker")], supported_pt_extensions)
 add_model_folder_path("loras", folder_names_and_paths["photomaker"][0][0])
 
-class PhotoMakerLoader:
+class PhotoMakerLoaderPlus:
     @classmethod
     def INPUT_TYPES(s):
         return {"required": { "photomaker_model_name": (folder_paths.get_filename_list("photomaker"), ),
@@ -31,13 +38,31 @@ class PhotoMakerLoader:
 
     def load_photomaker_model(self, photomaker_model_name):
         photomaker_model_path = folder_paths.get_full_path("photomaker", photomaker_model_name)
-        photomaker_model = PhotoMakerIDEncoder()
+        if 'v1' in photomaker_model_name:
+            photomaker_model = PhotoMakerIDEncoder()
+        else:
+            photomaker_model = PhotoMakerIDEncoder_CLIPInsightfaceExtendtoken()
         data = comfy.utils.load_torch_file(photomaker_model_path, safe_load=True)
         if "id_encoder" in data:
             data = data["id_encoder"]
-        photomaker_model.load_state_dict(data)
+        photomaker_model.load_state_dict(data, strict=False)
         return (photomaker_model,)
 
+class PhotoMakerInsightFaceLoader:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "provider": (["CPU", "CUDA", "ROCM"], ),
+            },
+        }
+
+    RETURN_TYPES = ("INSIGHTFACE",)
+    FUNCTION = "load_insightface"
+    CATEGORY = "PhotoMaker"
+
+    def load_insightface(self, provider):
+        return (insightface_loader(provider),)
 
 class PhotoMakerEncodePlus:
     @classmethod
@@ -49,6 +74,9 @@ class PhotoMakerEncodePlus:
                     "trigger_word": ("STRING", {"default": "img"}),
                     "text": ("STRING", {"multiline": True, "default": "photograph of a man img", "dynamicPrompts": True}),
                 },
+                "optional": {
+                    "insightface_opt": ("INSIGHTFACE",),
+                },
         }
     RETURN_TYPES = ("CONDITIONING",)
     FUNCTION = "apply_photomaker"
@@ -56,7 +84,7 @@ class PhotoMakerEncodePlus:
     CATEGORY = "PhotoMaker"
 
     @torch.no_grad()
-    def apply_photomaker(self, clip: CLIP, photomaker: PhotoMakerIDEncoder, image: Tensor, trigger_word: str, text: str):
+    def apply_photomaker(self, clip: CLIP, photomaker: Union[PhotoMakerIDEncoder, PhotoMakerIDEncoder_CLIPInsightfaceExtendtoken], image: Tensor, trigger_word: str, text: str, insightface_opt=None):
         if (num_id_images:=len(image)) == 0:
             raise ValueError("No image provided or found.")
         trigger_word=trigger_word.strip()
@@ -127,6 +155,7 @@ class PhotoMakerEncodePlus:
 
         photomaker = photomaker.to(device=photomaker.load_device)
 
+        input_id_images = image
         _, h, w, _ = image.shape
         do_resize = (h, w) != (224, 224)
         image_bak = image
@@ -137,8 +166,39 @@ class PhotoMakerEncodePlus:
         except RuntimeError as e:
             image = image_bak
         pixel_values = comfy.clip_vision.clip_preprocess(image.to(photomaker.load_device)).float()
-        cond = photomaker(id_pixel_values=pixel_values.unsqueeze(0), prompt_embeds=cond.to(photomaker.load_device),
+
+        if photomaker.__class__.__name__ == 'PhotoMakerIDEncoder':
+            cond = photomaker(id_pixel_values=pixel_values.unsqueeze(0), prompt_embeds=cond.to(photomaker.load_device),
                         class_tokens_mask=torch.tensor(class_tokens_mask, dtype=torch.bool, device=photomaker.load_device).unsqueeze(0))
+        else:
+            if insightface_opt is None:
+                raise ValueError(f"InsightFace is required for PhotoMaker V2")
+            face_detector = insightface_opt
+            if not hasattr(face_detector, 'get_'):
+                face_detector.get_ = face_detector.get
+                def get(self, img, max_num=0, det_size=(640, 640)):
+                    if det_size is not None:
+                        self.det_model.input_size = det_size
+                    return self.get_(img, max_num)
+                face_detector.get = get.__get__(face_detector, face_detector.__class__)
+
+            id_embed_list = []
+
+            for img in input_id_images:
+                faces = analyze_faces(face_detector, np.array(T.ToPILImage()(img.permute(2, 0, 1)).convert('RGB')))
+                if len(faces) > 0:
+                    id_embed_list.append(torch.from_numpy((faces[0]['embedding'])))
+
+            if len(id_embed_list) == 0:
+                raise ValueError(f"No face detected in input image pool")
+
+            id_embeds = torch.stack(id_embed_list).to(device=photomaker.load_device)
+
+            class_tokens_mask=torch.tensor(class_tokens_mask, dtype=torch.bool, device=photomaker.load_device).unsqueeze(0)
+            cond = photomaker(id_pixel_values=pixel_values.unsqueeze(0),
+                            prompt_embeds=cond.to(photomaker.load_device),
+                            class_tokens_mask=class_tokens_mask,
+                            id_embeds=id_embeds)
         cond = cond.to(device=device_orig)
 
         return ([[cond, {"pooled_output": pooled}]],)
@@ -203,7 +263,7 @@ class PrepImagesForClipVisionFromPath:
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "prep_images_for_clip_vision_from_path"
 
-    CATEGORY = "ipadapter"
+    CATEGORY = "image"
 
     @classmethod
     def get_images_paths(self, path:str):
@@ -244,22 +304,26 @@ class PrepImagesForClipVisionFromPath:
                 id_pixel_values = torch.cat(input_id_images)
         return (id_pixel_values,)
 
-supported = False
-try:
-    from comfy_extras.nodes_photomaker import PhotoMakerLoader as _PhotoMakerLoader
-    supported = True
-except: ...
+# supported = False
+# try:
+#     from comfy_extras.nodes_photomaker import PhotoMakerLoader as _PhotoMakerLoader
+#     supported = True
+# except Exception: ...
 
 NODE_CLASS_MAPPINGS = {
-   **({} if supported else {"PhotoMakerLoader": PhotoMakerLoader}),
+#    **({} if supported else {"PhotoMakerLoader": PhotoMakerLoaderPlus}),
+    "PhotoMakerLoaderPlus": PhotoMakerLoaderPlus,
     "PhotoMakerEncodePlus": PhotoMakerEncodePlus,
     "PhotoMakerStyles": PhotoMakerStyles,
     "PrepImagesForClipVisionFromPath": PrepImagesForClipVisionFromPath,
+    "PhotoMakerInsightFaceLoader": PhotoMakerInsightFaceLoader,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-   **({} if supported else {"PhotoMakerLoader": "Load PhotoMaker"}),
+#    **({} if supported else {"PhotoMakerLoader": "Load PhotoMaker"}),
+    "PhotoMakerLoaderPlus": "PhotoMaker Loader Plus",
     "PhotoMakerEncodePlus": "PhotoMaker Encode Plus",
     "PhotoMakerStyles": "Apply PhotoMaker Style",
     "PrepImagesForClipVisionFromPath": "Prepare Images For CLIP Vision From Path",
+    "PhotoMakerInsightFaceLoader": "PhotoMaker InsightFace Loader",
 }

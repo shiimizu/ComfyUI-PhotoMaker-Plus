@@ -8,7 +8,7 @@ PhotoMaker implementation that follows the ComfyUI way of doing things. The code
 
   <img width="1261" alt="example workflow" src="https://github.com/shiimizu/ComfyUI-PhotoMaker/assets/54494639/a8320460-a8e0-46df-9780-66a70631e989">
   
-  <p>Example workflow that you can load in ComfyUI.</p>
+  <p>↑ Example workflow that you can save and load in ComfyUI. ↑</p>
 </div>
 
 <br>
@@ -16,12 +16,14 @@ PhotoMaker implementation that follows the ComfyUI way of doing things. The code
 ## Installation
 
 1. Install [ComfyUI](https://github.com/comfyanonymous/ComfyUI).
-2. Install through [ComfyUI Manager](https://github.com/ltdrdata/ComfyUI-Manager) or clone this repo into `custom_nodes` by running the following commands in a terminal:
+2. Install [onnxruntime](https://onnxruntime.ai/docs/install/#python-installs) and `insightface`.
+3. Install through [ComfyUI Manager](https://github.com/ltdrdata/ComfyUI-Manager) or clone this repo into `custom_nodes` by running the following commands in a terminal:
     ```bash
     cd ComfyUI/custom_nodes
     git clone https://github.com/shiimizu/ComfyUI-PhotoMaker-Plus.git
     ```
-3. Download the model from [Hugging Face](https://huggingface.co/TencentARC/PhotoMaker) and place it in a `photomaker` folder in your `models` folder such as `ComfyUI/models/photomaker`.
+4. Download the model(s) from Hugging Face ([V1](https://huggingface.co/TencentARC/PhotoMaker), [V2](https://huggingface.co/TencentARC/PhotoMaker-V2)) and place it in a `photomaker` folder in your `models` folder such as `ComfyUI/models/photomaker`.
+5. Load the LoRA within the model using the `LoraLoaderModelOnly` node.
 
 ## Features of this `Plus` version
 
@@ -32,6 +34,9 @@ PhotoMaker implementation that follows the ComfyUI way of doing things. The code
 * Extra nodes such as `PhotoMakerStyles` and `PrepImagesForClipVisionFromPath`
 
 ## Important news
+
+**2024-07-26**
+* Support for PhotoMaker V2. This uses InsightFace, so make sure to use the new `PhotoMakerLoaderPlus` and `PhotoMakerInsightFaceLoader` nodes.
 
 **2024-01-24**
 * [Official support](https://github.com/comfyanonymous/ComfyUI/commit/d1533d9c0f1dde192f738ef1b745b15f49f41e02) for PhotoMaker landed in ComfyUI. Therefore, this repo's name has been changed. The `PhotoMakerEncode` node is also now `PhotoMakerEncodePlus`.

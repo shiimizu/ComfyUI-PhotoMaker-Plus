@@ -69,6 +69,8 @@ def hook_all(restore=False, hooks = None):
         ]
     for m in list(sys.modules.keys()):
         for hook in hooks:
+            if hook is None:
+                continue
             if hook.module_name == m or (os.name != 'nt' and m.endswith(hook.module_name_unix)) or (os.name == 'nt' and m.endswith(hook.module_name_nt)):
                 if hasattr(sys.modules[m], hook.target):
                     if not hasattr(sys.modules[m], hook.orig_key):
