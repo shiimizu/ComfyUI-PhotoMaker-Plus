@@ -1,6 +1,6 @@
 {
-  "last_node_id": 203,
-  "last_link_id": 458,
+  "last_node_id": 215,
+  "last_link_id": 474,
   "nodes": [
     {
       "id": 3,
@@ -14,7 +14,7 @@
         "1": 470
       },
       "flags": {},
-      "order": 32,
+      "order": 36,
       "mode": 0,
       "inputs": [
         {
@@ -258,7 +258,7 @@
         "1": 46
       },
       "flags": {},
-      "order": 35,
+      "order": 39,
       "mode": 0,
       "inputs": [
         {
@@ -449,7 +449,7 @@
         "1": 550
       },
       "flags": {},
-      "order": 31,
+      "order": 35,
       "mode": 0,
       "inputs": [
         {
@@ -567,7 +567,7 @@
         26
       ],
       "flags": {},
-      "order": 30,
+      "order": 34,
       "mode": 0,
       "inputs": [
         {
@@ -681,7 +681,7 @@
         "1": 50
       },
       "flags": {},
-      "order": 34,
+      "order": 38,
       "mode": 0,
       "inputs": [
         {
@@ -810,7 +810,7 @@
       "type": "LoadImage",
       "pos": [
         60,
-        700
+        1240
       ],
       "size": [
         320,
@@ -849,7 +849,7 @@
       "type": "LoadImage",
       "pos": [
         60,
-        1080
+        860
       ],
       "size": [
         320,
@@ -895,7 +895,7 @@
         26
       ],
       "flags": {},
-      "order": 25,
+      "order": 32,
       "mode": 0,
       "inputs": [
         {
@@ -1012,7 +1012,7 @@
         "1": 50
       },
       "flags": {},
-      "order": 36,
+      "order": 40,
       "mode": 0,
       "inputs": [
         {
@@ -1143,7 +1143,7 @@
         "1": 80
       },
       "flags": {},
-      "order": 33,
+      "order": 37,
       "mode": 0,
       "inputs": [
         {
@@ -1192,7 +1192,7 @@
         "1": 450
       },
       "flags": {},
-      "order": 39,
+      "order": 43,
       "mode": 0,
       "inputs": [
         {
@@ -1290,7 +1290,7 @@
       "type": "VAEDecode",
       "pos": [
         1930,
-        1320
+        1310
       ],
       "size": {
         "0": 210,
@@ -1299,7 +1299,7 @@
       "flags": {
         "collapsed": false
       },
-      "order": 40,
+      "order": 44,
       "mode": 0,
       "inputs": [
         {
@@ -1340,7 +1340,7 @@
         "1": 370
       },
       "flags": {},
-      "order": 38,
+      "order": 42,
       "mode": 0,
       "inputs": [
         {
@@ -1366,7 +1366,7 @@
         "1": 370
       },
       "flags": {},
-      "order": 37,
+      "order": 41,
       "mode": 0,
       "inputs": [
         {
@@ -1392,7 +1392,7 @@
         "1": 440
       },
       "flags": {},
-      "order": 41,
+      "order": 45,
       "mode": 0,
       "inputs": [
         {
@@ -1482,7 +1482,7 @@
         "1": 140
       },
       "flags": {},
-      "order": 27,
+      "order": 33,
       "mode": 0,
       "inputs": [
         {
@@ -1640,11 +1640,11 @@
       "id": 195,
       "type": "ImageBatchMulti",
       "pos": [
-        430,
-        960
+        420,
+        1450
       ],
       "size": {
-        "0": 210,
+        "0": 310,
         "1": 102
       },
       "flags": {},
@@ -1667,7 +1667,7 @@
           "name": "images",
           "type": "IMAGE",
           "links": [
-            417
+            471
           ],
           "slot_index": 0,
           "shape": 3
@@ -1683,21 +1683,21 @@
       "id": 196,
       "type": "RepeatImageBatch",
       "pos": [
-        430,
-        830
+        420,
+        700
       ],
       "size": {
         "0": 220,
         "1": 60
       },
       "flags": {},
-      "order": 22,
+      "order": 31,
       "mode": 0,
       "inputs": [
         {
           "name": "image",
           "type": "IMAGE",
-          "link": 417
+          "link": 474
         }
       ],
       "outputs": [
@@ -1722,8 +1722,8 @@
       "id": 197,
       "type": "Note",
       "pos": [
-        430,
-        700
+        140,
+        690
       ],
       "size": {
         "0": 240,
@@ -1817,6 +1817,161 @@
       "properties": {
         "showOutputText": false,
         "horizontal": false
+      }
+    },
+    {
+      "id": 206,
+      "type": "AutoCropFaces",
+      "pos": [
+        420,
+        970
+      ],
+      "size": {
+        "0": 320,
+        "1": 200
+      },
+      "flags": {},
+      "order": 25,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 459
+        }
+      ],
+      "outputs": [
+        {
+          "name": "face",
+          "type": "IMAGE",
+          "links": [
+            472
+          ],
+          "slot_index": 0,
+          "shape": 3
+        },
+        {
+          "name": "CROP_DATA",
+          "type": "CROP_DATA",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "AutoCropFaces"
+      },
+      "widgets_values": [
+        32,
+        2.5327556900618142,
+        0.5275884072513642,
+        0,
+        1,
+        "1:1"
+      ]
+    },
+    {
+      "id": 207,
+      "type": "PreviewImage",
+      "pos": [
+        820,
+        780
+      ],
+      "size": {
+        "0": 210,
+        "1": 250
+      },
+      "flags": {},
+      "order": 30,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 473
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 208,
+      "type": "ConstrainImage|pysssss",
+      "pos": [
+        420,
+        1240
+      ],
+      "size": {
+        "0": 320,
+        "1": 154
+      },
+      "flags": {},
+      "order": 22,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 471
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            459
+          ],
+          "slot_index": 0,
+          "shape": 6
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ConstrainImage|pysssss"
+      },
+      "widgets_values": [
+        1024,
+        1024,
+        0,
+        0,
+        "no"
+      ]
+    },
+    {
+      "id": 215,
+      "type": "ImageListToImageBatch",
+      "pos": [
+        420,
+        860
+      ],
+      "size": {
+        "0": 210,
+        "1": 26
+      },
+      "flags": {},
+      "order": 27,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 472
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            473,
+            474
+          ],
+          "slot_index": 0,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ImageListToImageBatch"
       }
     }
   ],
@@ -2190,14 +2345,6 @@
       "IMAGE"
     ],
     [
-      417,
-      195,
-      0,
-      196,
-      0,
-      "IMAGE"
-    ],
-    [
       427,
       4,
       1,
@@ -2308,6 +2455,46 @@
       44,
       0,
       "*"
+    ],
+    [
+      459,
+      208,
+      0,
+      206,
+      0,
+      "IMAGE"
+    ],
+    [
+      471,
+      195,
+      0,
+      208,
+      0,
+      "IMAGE"
+    ],
+    [
+      472,
+      206,
+      0,
+      215,
+      0,
+      "IMAGE"
+    ],
+    [
+      473,
+      215,
+      0,
+      207,
+      0,
+      "IMAGE"
+    ],
+    [
+      474,
+      215,
+      0,
+      196,
+      0,
+      "IMAGE"
     ]
   ],
   "groups": [
@@ -2351,10 +2538,10 @@
   "config": {},
   "extra": {
     "ds": {
-      "scale": 0.6400703650588787,
+      "scale": 0.7356161962822078,
       "offset": [
-        341.7653129241849,
-        314.0376190327701
+        128.8089986675575,
+        -561.526224247301
       ]
     },
     "0246.VERSION": [
