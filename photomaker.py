@@ -45,7 +45,7 @@ class PhotoMakerLoaderPlus:
         data = comfy.utils.load_torch_file(photomaker_model_path, safe_load=True)
         if "id_encoder" in data:
             data = data["id_encoder"]
-        photomaker_model.load_state_dict(data, strict=False)
+        photomaker_model.load_state_dict(data)
         return (photomaker_model,)
 
 class PhotoMakerInsightFaceLoader:
@@ -123,7 +123,7 @@ class PhotoMakerEncodePlus:
                                 p.extend([p[-1]] * (num-1))
                                 pmask.extend([( -1, pmask[-1][1]  )] * (num-1))
                         else:
-                            # The list we're cerating is empty so
+                            # The list we're creating is empty so
                             # take the last element of the main list and then take its last element and repeat it
                             if tmp and tmp[-1]:
                                 last_ls = tmp[-1]
@@ -155,6 +155,7 @@ class PhotoMakerEncodePlus:
 
         photomaker = photomaker.to(device=photomaker.load_device)
 
+        image.clamp_(0.0, 1.0)
         input_id_images = image
         _, h, w, _ = image.shape
         do_resize = (h, w) != (224, 224)
