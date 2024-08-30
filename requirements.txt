@@ -1,0 +1,4 @@
+onnxruntime
+onnxruntime-gpu
+insightface
+numpy==1.26.4
