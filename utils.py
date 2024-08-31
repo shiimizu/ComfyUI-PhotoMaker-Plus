@@ -165,6 +165,50 @@ def tokenize_with_weights(self: comfy.sd1_clip.SDTokenizer, text:str, return_wor
 
     return batched_tokens
 
+def tokenize_with_trigger_word(tokens, weights, num_images, img_token, start_token=49406, end_token=49407, pad_token=0, max_len=77, return_mask=False):
+    """
+    Filters out the image token(s).
+    Repeats the preceding token if any.
+    Rebatches.
+    """
+    count = 0
+    mask = (tokens != start_token) & (tokens != end_token) & (tokens != pad_token)
+    clean_tokens, clean_tokens_mask = tokens[mask], weights[mask]
+    img_token_indices = (clean_tokens == img_token).nonzero().view(-1)
+    split = torch.tensor_split(clean_tokens, img_token_indices + 1, dim=-1)
+    split_mask = torch.tensor_split(clean_tokens_mask, img_token_indices + 1, dim=-1)
+
+    l0 = []
+    lw0 = []
+    for chunk, chunk_mask in zip(split, split_mask):
+        img_token_exists = chunk == img_token
+        img_token_not_exists = ~img_token_exists
+        pad_amount = img_token_exists.nonzero().view(-1).shape[0] * num_images
+        chunk_clean, chunk_mask_clean = chunk[img_token_not_exists], chunk_mask[img_token_not_exists]
+        if pad_amount > 0 and len(chunk_clean) > 0:
+            count += 1
+            l0.append(torch.nn.functional.pad(chunk_clean[:-1], (0, pad_amount), 'constant', chunk_clean[-1] if not return_mask else -1))
+            lw0.append(torch.nn.functional.pad(chunk_mask_clean[:-1], (0, pad_amount), 'constant', chunk_mask_clean[-1] if not return_mask else -1))
+    
+    if count == 0:
+        return (tokens, weights, count)
+    
+    # rebatch and pad
+    out = []
+    outw=[]
+    one = torch.tensor([1.0])
+    for tc, tcw in zip(torch.cat(l0).split(max_len - 2), torch.cat(lw0).split(max_len - 2)):
+        out.append(torch.cat([torch.tensor([start_token]), tc, torch.tensor([end_token])]))
+        outw.append(torch.cat([one, tcw, one]))
+
+    out = torch.nn.utils.rnn.pad_sequence(out, batch_first=True, padding_value=pad_token)
+    outw = torch.nn.utils.rnn.pad_sequence(outw, batch_first=True, padding_value=1.0)
+
+    out = torch.nn.functional.pad(out, (0, max(0, max_len - out.shape[1])), 'constant', pad_token)
+    outw = torch.nn.functional.pad(outw, (0, max(0, max_len - outw.shape[1])), 'constant', 1.0)
+
+    return (out, outw, count)
+
 def load_pil_image(image: Union[str, PIL.Image.Image]) -> PIL.Image.Image:
     if isinstance(image, str):
         if image.startswith("http://") or image.startswith("https://"):

@@ -3,7 +3,6 @@ import comfy.clip_model
 import comfy.model_management
 import comfy.utils
 from comfy.sd import CLIP
-from itertools import zip_longest
 from transformers import CLIPImageProcessor
 from transformers.image_utils import PILImageResampling
 from collections import Counter
@@ -12,12 +11,12 @@ import torch
 import os
 from .model import PhotoMakerIDEncoder
 from .model_v2 import PhotoMakerIDEncoder_CLIPInsightfaceExtendtoken
-from .utils import load_image, tokenize_with_weights, prepImage, crop_image_pil, LoadImageCustom
+from .utils import LoadImageCustom, load_image, prepImage, crop_image_pil, tokenize_with_trigger_word
 from folder_paths import folder_names_and_paths, models_dir, supported_pt_extensions, add_model_folder_path
 from torch import Tensor
 import hashlib
 from typing import Union
-from .insightface_package import FaceAnalysis2, analyze_faces, insightface_loader
+from .insightface_package import analyze_faces, insightface_loader
 import numpy as np
 import torchvision.transforms.v2 as T
 
@@ -85,70 +84,31 @@ class PhotoMakerEncodePlus:
 
     @torch.no_grad()
     def apply_photomaker(self, clip: CLIP, photomaker: Union[PhotoMakerIDEncoder, PhotoMakerIDEncoder_CLIPInsightfaceExtendtoken], image: Tensor, trigger_word: str, text: str, insightface_opt=None):
-        if (num_id_images:=len(image)) == 0:
+        if (num_images := len(image)) == 0:
             raise ValueError("No image provided or found.")
-        trigger_word=trigger_word.strip()
         tokens = clip.tokenize(text)
         class_tokens_mask = {}
-        for key in tokens:
+        out_tokens = {}
+        for key, val in tokens.items():
             clip_tokenizer = getattr(clip.tokenizer, f'clip_{key}', clip.tokenizer)
-            tkwp = tokenize_with_weights(clip_tokenizer, text, return_tokens=True)
-            # e.g.: 24157
-            class_token = clip_tokenizer.tokenizer(trigger_word)["input_ids"][clip_tokenizer.tokens_start:-1][0]
-
-            tmp=[]
-            mask=[]
-            num = num_id_images
-            num_trigger_tokens_processed = 0
-            for ls in tkwp:
-                # recreate the list of pairs
-                p = []
-                pmask = []
-                # remove consecutive duplicates
-                newls = [ls[0]] + [curr for prev, curr in zip_longest(ls, ls[1:])
-                                        if not (curr and prev and curr[0] == class_token and prev[0] == class_token)]
-                if newls and newls[-1] is None: newls.pop()
-                for pair in newls:
-                    # Non-matches simply get appended to the list.
-                    if pair[0] != class_token:
-                        p.append(pair)
-                        pmask.append(pair)
-                    else:
-                        # Found a match; append it to the previous list or main list's last list
-                        num_trigger_tokens_processed += 1
-                        if p:
-                            # take the last element of the list we're creating and repeat it
-                            pmask[-1] = (-1, pmask[-1][1])
-                            if num-1 > 0:
-                                p.extend([p[-1]] * (num-1))
-                                pmask.extend([( -1, pmask[-1][1]  )] * (num-1))
-                        else:
-                            # The list we're creating is empty so
-                            # take the last element of the main list and then take its last element and repeat it
-                            if tmp and tmp[-1]:
-                                last_ls = tmp[-1]
-                                last_pair = last_ls[-1]
-                                mask[-1][-1] = (-1, mask[-1][-1][1])
-                                if num-1 > 0:
-                                    last_ls.extend([last_pair] * (num-1))
-                                    mask[-1].extend([ (-1, mask[-1][-1][1]) ] * (num-1))
-                if p: tmp.append(p)
-                if pmask: mask.append(pmask)
-            token_weight_pairs = tmp
-            token_weight_pairs_mask = mask
+            img_token = clip_tokenizer.tokenizer(trigger_word.strip(), truncation=False, add_special_tokens=False)["input_ids"][0] # only get the first token
+            _tokens = torch.tensor([[tpy[0] for tpy in tpy_]  for tpy_ in val ] , dtype=torch.int32)
+            _weights = torch.tensor([[tpy[1] for tpy in tpy_]  for tpy_ in val] , dtype=torch.float32)
+            start_token = clip_tokenizer.start_token
+            end_token = clip_tokenizer.end_token
+            pad_token = clip_tokenizer.pad_token
             
-            # send it back to be batched evenly
-            token_weight_pairs = tokenize_with_weights(clip_tokenizer, text, tokens=token_weight_pairs)
-            token_weight_pairs_mask = tokenize_with_weights(clip_tokenizer, text, tokens=token_weight_pairs_mask)
-            tokens[key] = token_weight_pairs
+            tokens_mask = tokenize_with_trigger_word(_tokens, _weights, num_images,img_token,start_token, end_token, pad_token, return_mask=True)[0]
+            tokens_new, weights_new, num_trigger_tokens_processed = tokenize_with_trigger_word(_tokens, _weights, num_images,img_token,start_token, end_token, pad_token)
+            token_weight_pairs = [[(tt,ww) for tt,ww in zip(x.tolist(), y.tolist())] for x,y in zip(tokens_new, weights_new)]
+            mask = (tokens_mask == -1).tolist()
+            class_tokens_mask[key] = mask
+            out_tokens[key] = token_weight_pairs
 
-            # Finalize the mask
-            class_tokens_mask[key] = list(map(lambda a:  list(map(lambda b: b[0] < 0, a)), token_weight_pairs_mask))
-
-        prompt_embeds, pooled = clip.encode_from_tokens(tokens, return_pooled=True)
-        cond = prompt_embeds
+        cond, pooled = clip.encode_from_tokens(out_tokens, return_pooled=True)
+        prompt_embeds = cond
         device_orig = prompt_embeds.device
-        first_key = next(iter(class_tokens_mask.keys()))
+        first_key = next(iter(tokens.keys()))
         class_tokens_mask = class_tokens_mask[first_key]
         if num_trigger_tokens_processed > 1:
             image = image.repeat([num_trigger_tokens_processed] + [1] * (len(image.shape) - 1))
@@ -170,7 +130,7 @@ class PhotoMakerEncodePlus:
 
         if photomaker.__class__.__name__ == 'PhotoMakerIDEncoder':
             cond = photomaker(id_pixel_values=pixel_values.unsqueeze(0), prompt_embeds=cond.to(photomaker.load_device),
-                        class_tokens_mask=torch.tensor(class_tokens_mask, dtype=torch.bool, device=photomaker.load_device).unsqueeze(0))
+                        class_tokens_mask=torch.tensor(class_tokens_mask, dtype=torch.bool, device=photomaker.load_device))
         else:
             if insightface_opt is None:
                 raise ValueError(f"InsightFace is required for PhotoMaker V2")
@@ -185,8 +145,15 @@ class PhotoMakerEncodePlus:
 
             id_embed_list = []
 
+            ToPILImage = T.ToPILImage()
+            def tensor_to_pil_np(_img):
+                nonlocal ToPILImage
+                img_pil = ToPILImage(_img.movedim(-1,0))
+                if img_pil.mode != 'RGB': img_pil = img_pil.convert('RGB')
+                return np.asarray(img_pil)
+
             for img in input_id_images:
-                faces = analyze_faces(face_detector, np.array(T.ToPILImage()(img.permute(2, 0, 1)).convert('RGB')))
+                faces = analyze_faces(face_detector, tensor_to_pil_np(img))
                 if len(faces) > 0:
                     id_embed_list.append(torch.from_numpy((faces[0]['embedding'])))
 
