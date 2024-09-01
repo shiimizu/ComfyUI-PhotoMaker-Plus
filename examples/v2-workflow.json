@@ -1,6 +1,6 @@
 {
-  "last_node_id": 203,
-  "last_link_id": 458,
+  "last_node_id": 204,
+  "last_link_id": 461,
   "nodes": [
     {
       "id": 3,
@@ -88,8 +88,8 @@
           "name": "MODEL",
           "type": "MODEL",
           "links": [
-            430,
-            447
+            447,
+            459
           ],
           "slot_index": 0
         },
@@ -210,7 +210,7 @@
         "1": 54
       },
       "flags": {},
-      "order": 21,
+      "order": 20,
       "mode": 0,
       "inputs": [
         {
@@ -241,7 +241,7 @@
         "Node name for S&R": "CLIPTextEncode"
       },
       "widgets_values": [
-        "asymmetry, worst quality, low quality, illustration, 3d, 2d, painting, cartoons, sketch), open mouth"
+        "asymmetry, worst quality, low quality, illustration, 3d, 2d, painting, cartoons, sketch, open mouth"
       ],
       "color": "#322",
       "bgcolor": "#533"
@@ -317,7 +317,7 @@
         "Run widget replace on values": false
       },
       "widgets_values": [
-        "asymmetry, worst quality, low quality, illustration, 3d, 2d, painting, cartoons, sketch), open mouth"
+        "asymmetry, worst quality, low quality, illustration, 3d, 2d, painting, cartoons, sketch, open mouth"
       ],
       "color": "#322",
       "bgcolor": "#533"
@@ -605,13 +605,13 @@
         26
       ],
       "flags": {},
-      "order": 19,
+      "order": 22,
       "mode": 0,
       "inputs": [
         {
           "name": "",
           "type": "*",
-          "link": 121
+          "link": 461
         }
       ],
       "outputs": [
@@ -643,7 +643,7 @@
         26
       ],
       "flags": {},
-      "order": 14,
+      "order": 13,
       "mode": 0,
       "inputs": [
         {
@@ -721,7 +721,7 @@
         26
       ],
       "flags": {},
-      "order": 17,
+      "order": 16,
       "mode": 0,
       "inputs": [
         {
@@ -761,7 +761,7 @@
       "flags": {
         "collapsed": false
       },
-      "order": 20,
+      "order": 19,
       "mode": 0,
       "inputs": [
         {
@@ -812,10 +812,10 @@
         60,
         700
       ],
-      "size": [
-        320,
-        310
-      ],
+      "size": {
+        "0": 320,
+        "1": 310
+      },
       "flags": {},
       "order": 4,
       "mode": 0,
@@ -851,10 +851,10 @@
         60,
         1080
       ],
-      "size": [
-        320,
-        310
-      ],
+      "size": {
+        "0": 320,
+        "1": 310
+      },
       "flags": {},
       "order": 5,
       "mode": 0,
@@ -957,48 +957,6 @@
       ],
       "color": "#223",
       "bgcolor": "#335"
-    },
-    {
-      "id": 53,
-      "type": "LoraLoaderModelOnly",
-      "pos": [
-        -330,
-        -40
-      ],
-      "size": {
-        "0": 310,
-        "1": 82
-      },
-      "flags": {},
-      "order": 13,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "model",
-          "type": "MODEL",
-          "link": 430
-        }
-      ],
-      "outputs": [
-        {
-          "name": "MODEL",
-          "type": "MODEL",
-          "links": [
-            121
-          ],
-          "slot_index": 0,
-          "shape": 3
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "LoraLoaderModelOnly"
-      },
-      "widgets_values": [
-        "photomaker-v2.bin",
-        1
-      ],
-      "color": "#323",
-      "bgcolor": "#535"
     },
     {
       "id": 59,
@@ -1418,7 +1376,7 @@
         "1": 80
       },
       "flags": {},
-      "order": 15,
+      "order": 14,
       "mode": 0,
       "inputs": [
         {
@@ -1465,7 +1423,7 @@
       "widgets_values": [
         "(No style)",
         "sci-fi, closeup portrait photo of a woman img wearing the sunglasses in Iron man suit, face, slim body, high quality, film grain",
-        "asymmetry, worst quality, low quality, illustration, 3d, 2d, painting, cartoons, sketch), open mouth"
+        "asymmetry, worst quality, low quality, illustration, 3d, 2d, painting, cartoons, sketch, open mouth"
       ],
       "color": "#432",
       "bgcolor": "#653"
@@ -1537,41 +1495,6 @@
       "bgcolor": "#3f5159"
     },
     {
-      "id": 74,
-      "type": "PhotoMakerLoaderPlus",
-      "pos": [
-        -330,
-        -280
-      ],
-      "size": {
-        "0": 350,
-        "1": 60
-      },
-      "flags": {
-        "collapsed": false
-      },
-      "order": 8,
-      "mode": 0,
-      "outputs": [
-        {
-          "name": "PHOTOMAKER",
-          "type": "PHOTOMAKER",
-          "links": [
-            168
-          ],
-          "shape": 3
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "PhotoMakerLoaderPlus"
-      },
-      "widgets_values": [
-        "photomaker-v2.bin"
-      ],
-      "color": "#323",
-      "bgcolor": "#535"
-    },
-    {
       "id": 76,
       "type": "PhotoMakerInsightFaceLoader",
       "pos": [
@@ -1583,7 +1506,7 @@
         "1": 58
       },
       "flags": {},
-      "order": 9,
+      "order": 8,
       "mode": 0,
       "outputs": [
         {
@@ -1616,7 +1539,7 @@
         "1": 58
       },
       "flags": {},
-      "order": 10,
+      "order": 9,
       "mode": 0,
       "outputs": [
         {
@@ -1648,7 +1571,7 @@
         "1": 102
       },
       "flags": {},
-      "order": 16,
+      "order": 15,
       "mode": 0,
       "inputs": [
         {
@@ -1691,7 +1614,7 @@
         "1": 60
       },
       "flags": {},
-      "order": 22,
+      "order": 21,
       "mode": 0,
       "inputs": [
         {
@@ -1716,65 +1639,6 @@
       },
       "widgets_values": [
         2
-      ]
-    },
-    {
-      "id": 197,
-      "type": "Note",
-      "pos": [
-        430,
-        700
-      ],
-      "size": {
-        "0": 240,
-        "1": 70
-      },
-      "flags": {},
-      "order": 11,
-      "mode": 0,
-      "properties": {
-        "text": ""
-      },
-      "widgets_values": [
-        "If you only have a few images, repeat it to increase the resemblance."
-      ],
-      "color": "#432",
-      "bgcolor": "#653"
-    },
-    {
-      "id": 199,
-      "type": "PrimitiveNode",
-      "pos": [
-        840,
-        90
-      ],
-      "size": {
-        "0": 210,
-        "1": 80
-      },
-      "flags": {},
-      "order": 12,
-      "mode": 0,
-      "outputs": [
-        {
-          "name": "INT",
-          "type": "INT",
-          "links": [
-            443
-          ],
-          "slot_index": 0,
-          "widget": {
-            "name": "value"
-          }
-        }
-      ],
-      "title": "Seed",
-      "properties": {
-        "Run widget replace on values": false
-      },
-      "widgets_values": [
-        1084347908952419,
-        "randomize"
       ]
     },
     {
@@ -1818,6 +1682,148 @@
         "showOutputText": false,
         "horizontal": false
       }
+    },
+    {
+      "id": 74,
+      "type": "PhotoMakerLoaderPlus",
+      "pos": [
+        -330,
+        -280
+      ],
+      "size": {
+        "0": 350,
+        "1": 60
+      },
+      "flags": {
+        "collapsed": false
+      },
+      "order": 10,
+      "mode": 0,
+      "outputs": [
+        {
+          "name": "PHOTOMAKER",
+          "type": "PHOTOMAKER",
+          "links": [
+            168,
+            460
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PhotoMakerLoaderPlus"
+      },
+      "widgets_values": [
+        "photomaker-v2.bin"
+      ],
+      "color": "#323",
+      "bgcolor": "#535"
+    },
+    {
+      "id": 204,
+      "type": "PhotoMakerLoraLoaderPlus",
+      "pos": [
+        -330,
+        -50
+      ],
+      "size": {
+        "0": 315,
+        "1": 78
+      },
+      "flags": {},
+      "order": 17,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 459
+        },
+        {
+          "name": "photomaker",
+          "type": "PHOTOMAKER",
+          "link": 460
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            461
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PhotoMakerLoraLoaderPlus"
+      },
+      "widgets_values": [
+        1
+      ],
+      "color": "#323",
+      "bgcolor": "#535"
+    },
+    {
+      "id": 199,
+      "type": "PrimitiveNode",
+      "pos": [
+        840,
+        90
+      ],
+      "size": [
+        280,
+        80
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "outputs": [
+        {
+          "name": "INT",
+          "type": "INT",
+          "links": [
+            443
+          ],
+          "slot_index": 0,
+          "widget": {
+            "name": "value"
+          }
+        }
+      ],
+      "title": "Seed",
+      "properties": {
+        "Run widget replace on values": false
+      },
+      "widgets_values": [
+        1084347908952419,
+        "randomize"
+      ]
+    },
+    {
+      "id": 197,
+      "type": "Note",
+      "pos": [
+        430,
+        700
+      ],
+      "size": {
+        "0": 240,
+        "1": 70
+      },
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "If you only have a few images, try repeating it to increase the resemblance."
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
     }
   ],
   "links": [
@@ -1948,14 +1954,6 @@
       21,
       5,
       "INT"
-    ],
-    [
-      121,
-      53,
-      0,
-      24,
-      0,
-      "*"
     ],
     [
       132,
@@ -2222,14 +2220,6 @@
       "CLIP"
     ],
     [
-      430,
-      4,
-      0,
-      53,
-      0,
-      "MODEL"
-    ],
-    [
       433,
       24,
       0,
@@ -2308,6 +2298,30 @@
       44,
       0,
       "*"
+    ],
+    [
+      459,
+      4,
+      0,
+      204,
+      0,
+      "MODEL"
+    ],
+    [
+      460,
+      74,
+      0,
+      204,
+      1,
+      "PHOTOMAKER"
+    ],
+    [
+      461,
+      204,
+      0,
+      24,
+      0,
+      "*"
     ]
   ],
   "groups": [
@@ -2351,10 +2365,10 @@
   "config": {},
   "extra": {
     "ds": {
-      "scale": 0.6400703650588787,
+      "scale": 0.6208089192708338,
       "offset": [
-        341.7653129241849,
-        314.0376190327701
+        372.1121827861227,
+        374.3978697891403
       ]
     },
     "0246.VERSION": [

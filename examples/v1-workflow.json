@@ -1,142 +1,20 @@
 {
-  "last_node_id": 75,
-  "last_link_id": 170,
+  "last_node_id": 79,
+  "last_link_id": 174,
   "nodes": [
-    {
-      "id": 39,
-      "type": "PrepImageForClipVision",
-      "pos": [
-        832.411678279369,
-        1286.7164360416307
-      ],
-      "size": {
-        "0": 315,
-        "1": 106
-      },
-      "flags": {},
-      "order": 13,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "image",
-          "type": "IMAGE",
-          "link": 75,
-          "slot_index": 0
-        }
-      ],
-      "outputs": [
-        {
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "links": [
-            85
-          ],
-          "shape": 3,
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "PrepImageForClipVision"
-      },
-      "widgets_values": [
-        "LANCZOS",
-        "top",
-        0
-      ]
-    },
-    {
-      "id": 32,
-      "type": "LoadImage",
-      "pos": [
-        73.20769979965253,
-        1103.817205433426
-      ],
-      "size": [
-        320,
-        310
-      ],
-      "flags": {},
-      "order": 0,
-      "mode": 0,
-      "outputs": [
-        {
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "links": [
-            74,
-            83
-          ],
-          "shape": 3,
-          "slot_index": 0
-        },
-        {
-          "name": "MASK",
-          "type": "MASK",
-          "links": null,
-          "shape": 3
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "LoadImage"
-      },
-      "widgets_values": [
-        "Screenshot 2024-01-18 at 1.04.01 PM.png",
-        "image"
-      ]
-    },
-    {
-      "id": 33,
-      "type": "LoadImage",
-      "pos": [
-        433.20769979965274,
-        1103.817205433426
-      ],
-      "size": [
-        320,
-        310
-      ],
-      "flags": {},
-      "order": 1,
-      "mode": 0,
-      "outputs": [
-        {
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "links": [
-            75,
-            84
-          ],
-          "shape": 3,
-          "slot_index": 0
-        },
-        {
-          "name": "MASK",
-          "type": "MASK",
-          "links": null,
-          "shape": 3
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "LoadImage"
-      },
-      "widgets_values": [
-        "anne1.jpg",
-        "image"
-      ]
-    },
     {
       "id": 31,
       "type": "ImageBatch",
       "pos": [
-        79.58453321093153,
-        1018.4025073480115
+        80,
+        1020
       ],
       "size": {
         "0": 210,
         "1": 46
       },
       "flags": {},
-      "order": 14,
+      "order": 16,
       "mode": 0,
       "inputs": [
         {
@@ -158,8 +36,8 @@
           "links": [
             101
           ],
-          "shape": 3,
-          "slot_index": 0
+          "slot_index": 0,
+          "shape": 3
         }
       ],
       "properties": {
@@ -170,15 +48,15 @@
       "id": 48,
       "type": "ImageBatch",
       "pos": [
-        79.58453321093153,
-        928.4025073480097
+        80,
+        930
       ],
       "size": {
         "0": 210,
         "1": 46
       },
       "flags": {},
-      "order": 23,
+      "order": 21,
       "mode": 0,
       "inputs": [
         {
@@ -200,53 +78,13 @@
           "links": [
             106
           ],
-          "shape": 3,
-          "slot_index": 0
+          "slot_index": 0,
+          "shape": 3
         }
       ],
       "properties": {
         "Node name for S&R": "ImageBatch"
       }
-    },
-    {
-      "id": 45,
-      "type": "LoadImage",
-      "pos": [
-        60,
-        1490
-      ],
-      "size": [
-        320,
-        310
-      ],
-      "flags": {},
-      "order": 2,
-      "mode": 0,
-      "outputs": [
-        {
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "links": [
-            97,
-            102
-          ],
-          "shape": 3,
-          "slot_index": 0
-        },
-        {
-          "name": "MASK",
-          "type": "MASK",
-          "links": null,
-          "shape": 3
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "LoadImage"
-      },
-      "widgets_values": [
-        "tLelKoPNiyJCSEtQTz1FGv4TLGc.jpg",
-        "image"
-      ]
     },
     {
       "id": 24,
@@ -260,13 +98,13 @@
         26
       ],
       "flags": {},
-      "order": 26,
+      "order": 22,
       "mode": 0,
       "inputs": [
         {
           "name": "",
           "type": "*",
-          "link": 121
+          "link": 173
         }
       ],
       "outputs": [
@@ -287,48 +125,6 @@
       }
     },
     {
-      "id": 46,
-      "type": "PrepImageForClipVision",
-      "pos": [
-        839.5492689483435,
-        1442.4002730692762
-      ],
-      "size": {
-        "0": 315,
-        "1": 106
-      },
-      "flags": {},
-      "order": 15,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "image",
-          "type": "IMAGE",
-          "link": 97,
-          "slot_index": 0
-        }
-      ],
-      "outputs": [
-        {
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "links": [
-            99
-          ],
-          "shape": 3,
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "PrepImageForClipVision"
-      },
-      "widgets_values": [
-        "LANCZOS",
-        "top",
-        0
-      ]
-    },
-    {
       "id": 7,
       "type": "CLIPTextEncode",
       "pos": [
@@ -340,7 +136,7 @@
         "1": 54
       },
       "flags": {},
-      "order": 25,
+      "order": 20,
       "mode": 0,
       "inputs": [
         {
@@ -371,7 +167,7 @@
         "Node name for S&R": "CLIPTextEncode"
       },
       "widgets_values": [
-        "asymmetry, worst quality, low quality, illustration, 3d, 2d, painting, cartoons, sketch), open mouth"
+        "asymmetry, worst quality, low quality, illustration, 3d, 2d, painting, cartoons, sketch, open mouth"
       ],
       "color": "#322",
       "bgcolor": "#533"
@@ -388,17 +184,15 @@
         "1": 106
       },
       "flags": {},
-      "order": 3,
+      "order": 0,
       "mode": 0,
       "outputs": [
         {
           "name": "IMAGE",
           "type": "IMAGE",
-          "links": [
-            127
-          ],
-          "shape": 3,
-          "slot_index": 0
+          "links": [],
+          "slot_index": 0,
+          "shape": 3
         }
       ],
       "properties": {
@@ -409,134 +203,6 @@
         "lanczos",
         "center"
       ]
-    },
-    {
-      "id": 38,
-      "type": "PrepImageForClipVision",
-      "pos": [
-        830,
-        1130
-      ],
-      "size": {
-        "0": 315,
-        "1": 106
-      },
-      "flags": {},
-      "order": 12,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "image",
-          "type": "IMAGE",
-          "link": 74,
-          "slot_index": 0
-        }
-      ],
-      "outputs": [
-        {
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "links": [
-            86
-          ],
-          "shape": 3,
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "PrepImageForClipVision"
-      },
-      "widgets_values": [
-        "LANCZOS",
-        "top",
-        0
-      ]
-    },
-    {
-      "id": 42,
-      "type": "ImageBatch",
-      "pos": [
-        830,
-        1020
-      ],
-      "size": {
-        "0": 210,
-        "1": 46
-      },
-      "flags": {},
-      "order": 22,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "image1",
-          "type": "IMAGE",
-          "link": 86,
-          "slot_index": 0
-        },
-        {
-          "name": "image2",
-          "type": "IMAGE",
-          "link": 85,
-          "slot_index": 1
-        }
-      ],
-      "outputs": [
-        {
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "links": [
-            98
-          ],
-          "shape": 3,
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "ImageBatch"
-      }
-    },
-    {
-      "id": 47,
-      "type": "ImageBatch",
-      "pos": [
-        830,
-        920
-      ],
-      "size": {
-        "0": 210,
-        "1": 46
-      },
-      "flags": {},
-      "order": 27,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "image1",
-          "type": "IMAGE",
-          "link": 98,
-          "slot_index": 0
-        },
-        {
-          "name": "image2",
-          "type": "IMAGE",
-          "link": 99,
-          "slot_index": 1
-        }
-      ],
-      "outputs": [
-        {
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "links": [
-            128
-          ],
-          "shape": 3,
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "ImageBatch"
-      }
     },
     {
       "id": 41,
@@ -550,13 +216,13 @@
         26
       ],
       "flags": {},
-      "order": 31,
+      "order": 27,
       "mode": 0,
       "inputs": [
         {
           "name": "",
           "type": "*",
-          "link": 128
+          "link": 171
         }
       ],
       "outputs": [
@@ -566,74 +232,6 @@
           "links": [
             119
           ],
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "showOutputText": false,
-        "horizontal": false
-      }
-    },
-    {
-      "id": 43,
-      "type": "Reroute",
-      "pos": [
-        500,
-        790
-      ],
-      "size": [
-        75,
-        26
-      ],
-      "flags": {},
-      "order": 28,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "",
-          "type": "*",
-          "link": 106
-        }
-      ],
-      "outputs": [
-        {
-          "name": "",
-          "type": "IMAGE",
-          "links": [],
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "showOutputText": false,
-        "horizontal": false
-      }
-    },
-    {
-      "id": 58,
-      "type": "Reroute",
-      "pos": [
-        690,
-        790
-      ],
-      "size": [
-        75,
-        26
-      ],
-      "flags": {},
-      "order": 16,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "",
-          "type": "*",
-          "link": 127
-        }
-      ],
-      "outputs": [
-        {
-          "name": "",
-          "type": "IMAGE",
-          "links": null,
           "slot_index": 0
         }
       ],
@@ -654,7 +252,7 @@
         "1": 110
       },
       "flags": {},
-      "order": 4,
+      "order": 1,
       "mode": 0,
       "outputs": [
         {
@@ -687,7 +285,7 @@
         26
       ],
       "flags": {},
-      "order": 32,
+      "order": 26,
       "mode": 0,
       "inputs": [
         {
@@ -724,7 +322,7 @@
         26
       ],
       "flags": {},
-      "order": 30,
+      "order": 24,
       "mode": 0,
       "inputs": [
         {
@@ -763,7 +361,7 @@
         26
       ],
       "flags": {},
-      "order": 17,
+      "order": 13,
       "mode": 0,
       "inputs": [
         {
@@ -801,7 +399,7 @@
         26
       ],
       "flags": {},
-      "order": 19,
+      "order": 15,
       "mode": 0,
       "inputs": [
         {
@@ -844,7 +442,7 @@
         26
       ],
       "flags": {},
-      "order": 21,
+      "order": 17,
       "mode": 0,
       "inputs": [
         {
@@ -882,7 +480,7 @@
         "1": 46
       },
       "flags": {},
-      "order": 43,
+      "order": 38,
       "mode": 0,
       "inputs": [
         {
@@ -911,48 +509,6 @@
       }
     },
     {
-      "id": 53,
-      "type": "LoraLoaderModelOnly",
-      "pos": [
-        30,
-        320
-      ],
-      "size": {
-        "0": 310,
-        "1": 82
-      },
-      "flags": {},
-      "order": 20,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "model",
-          "type": "MODEL",
-          "link": 120
-        }
-      ],
-      "outputs": [
-        {
-          "name": "MODEL",
-          "type": "MODEL",
-          "links": [
-            121
-          ],
-          "shape": 3,
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "LoraLoaderModelOnly"
-      },
-      "widgets_values": [
-        "photomaker-v1.bin",
-        1
-      ],
-      "color": "#323",
-      "bgcolor": "#535"
-    },
-    {
       "id": 19,
       "type": "PrimitiveNode",
       "pos": [
@@ -964,7 +520,7 @@
         "1": 110
       },
       "flags": {},
-      "order": 5,
+      "order": 2,
       "mode": 0,
       "outputs": [
         {
@@ -1000,7 +556,7 @@
         "1": 100
       },
       "flags": {},
-      "order": 6,
+      "order": 3,
       "mode": 0,
       "outputs": [
         {
@@ -1019,7 +575,7 @@
         "Run widget replace on values": false
       },
       "widgets_values": [
-        "asymmetry, worst quality, low quality, illustration, 3d, 2d, painting, cartoons, sketch), open mouth"
+        "asymmetry, worst quality, low quality, illustration, 3d, 2d, painting, cartoons, sketch, open mouth"
       ],
       "color": "#322",
       "bgcolor": "#533"
@@ -1036,7 +592,7 @@
         "1": 300
       },
       "flags": {},
-      "order": 24,
+      "order": 19,
       "mode": 0,
       "inputs": [
         {
@@ -1055,8 +611,8 @@
           "links": [
             155
           ],
-          "shape": 3,
-          "slot_index": 0
+          "slot_index": 0,
+          "shape": 3
         }
       ],
       "properties": {
@@ -1086,7 +642,7 @@
       "flags": {
         "collapsed": false
       },
-      "order": 48,
+      "order": 43,
       "mode": 0,
       "inputs": [
         {
@@ -1107,8 +663,8 @@
           "links": [
             150
           ],
-          "shape": 3,
-          "slot_index": 0
+          "slot_index": 0,
+          "shape": 3
         }
       ],
       "properties": {
@@ -1127,7 +683,7 @@
         "1": 50
       },
       "flags": {},
-      "order": 44,
+      "order": 39,
       "mode": 0,
       "inputs": [
         {
@@ -1150,8 +706,8 @@
           "links": [
             141
           ],
-          "shape": 3,
-          "slot_index": 0
+          "slot_index": 0,
+          "shape": 3
         }
       ],
       "properties": {
@@ -1170,7 +726,7 @@
         "1": 50
       },
       "flags": {},
-      "order": 42,
+      "order": 37,
       "mode": 0,
       "inputs": [
         {
@@ -1210,7 +766,7 @@
         "1": 80
       },
       "flags": {},
-      "order": 35,
+      "order": 29,
       "mode": 0,
       "inputs": [
         {
@@ -1259,7 +815,7 @@
         "1": 80
       },
       "flags": {},
-      "order": 41,
+      "order": 36,
       "mode": 0,
       "inputs": [
         {
@@ -1308,7 +864,7 @@
         "1": 80
       },
       "flags": {},
-      "order": 7,
+      "order": 4,
       "mode": 0,
       "outputs": [
         {
@@ -1347,7 +903,7 @@
         "1": 370
       },
       "flags": {},
-      "order": 45,
+      "order": 40,
       "mode": 0,
       "inputs": [
         {
@@ -1373,7 +929,7 @@
         "1": 370
       },
       "flags": {},
-      "order": 46,
+      "order": 41,
       "mode": 0,
       "inputs": [
         {
@@ -1399,7 +955,7 @@
         "1": 80
       },
       "flags": {},
-      "order": 8,
+      "order": 5,
       "mode": 0,
       "outputs": [
         {
@@ -1439,7 +995,7 @@
       "flags": {
         "collapsed": false
       },
-      "order": 36,
+      "order": 31,
       "mode": 0,
       "inputs": [
         {
@@ -1464,7 +1020,7 @@
         "1": 440
       },
       "flags": {},
-      "order": 49,
+      "order": 44,
       "mode": 0,
       "inputs": [
         {
@@ -1490,7 +1046,7 @@
         26
       ],
       "flags": {},
-      "order": 33,
+      "order": 30,
       "mode": 0,
       "inputs": [
         {
@@ -1527,7 +1083,7 @@
         26
       ],
       "flags": {},
-      "order": 38,
+      "order": 33,
       "mode": 0,
       "inputs": [
         {
@@ -1565,7 +1121,7 @@
         "1": 54
       },
       "flags": {},
-      "order": 29,
+      "order": 23,
       "mode": 0,
       "inputs": [
         {
@@ -1602,39 +1158,6 @@
       "bgcolor": "#353"
     },
     {
-      "id": 74,
-      "type": "PhotoMakerLoaderPlus",
-      "pos": [
-        30,
-        460
-      ],
-      "size": {
-        "0": 315,
-        "1": 58
-      },
-      "flags": {},
-      "order": 9,
-      "mode": 0,
-      "outputs": [
-        {
-          "name": "PHOTOMAKER",
-          "type": "PHOTOMAKER",
-          "links": [
-            168
-          ],
-          "shape": 3
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "PhotoMakerLoaderPlus"
-      },
-      "widgets_values": [
-        "photomaker-v1.bin"
-      ],
-      "color": "#323",
-      "bgcolor": "#535"
-    },
-    {
       "id": 73,
       "type": "PhotoMakerEncodePlus",
       "pos": [
@@ -1646,7 +1169,7 @@
         "1": 140
       },
       "flags": {},
-      "order": 37,
+      "order": 32,
       "mode": 0,
       "inputs": [
         {
@@ -1712,7 +1235,7 @@
         "1": 80
       },
       "flags": {},
-      "order": 18,
+      "order": 14,
       "mode": 0,
       "inputs": [
         {
@@ -1740,8 +1263,8 @@
             153,
             166
           ],
-          "shape": 3,
-          "slot_index": 0
+          "slot_index": 0,
+          "shape": 3
         },
         {
           "name": "NEGATIVE",
@@ -1749,8 +1272,8 @@
           "links": [
             156
           ],
-          "shape": 3,
-          "slot_index": 1
+          "slot_index": 1,
+          "shape": 3
         }
       ],
       "properties": {
@@ -1759,7 +1282,7 @@
       "widgets_values": [
         "(No style)",
         "sci-fi, closeup portrait photo of a woman img wearing the sunglasses in Iron man suit, face, slim body, high quality, film grain",
-        "asymmetry, worst quality, low quality, illustration, 3d, 2d, painting, cartoons, sketch), open mouth"
+        "asymmetry, worst quality, low quality, illustration, 3d, 2d, painting, cartoons, sketch, open mouth"
       ],
       "color": "#432",
       "bgcolor": "#653"
@@ -1776,7 +1299,7 @@
         "1": 470
       },
       "flags": {},
-      "order": 40,
+      "order": 35,
       "mode": 0,
       "inputs": [
         {
@@ -1843,7 +1366,7 @@
         "1": 450
       },
       "flags": {},
-      "order": 47,
+      "order": 42,
       "mode": 0,
       "inputs": [
         {
@@ -1911,7 +1434,7 @@
         "1": 80
       },
       "flags": {},
-      "order": 10,
+      "order": 6,
       "mode": 0,
       "outputs": [
         {
@@ -1939,56 +1462,6 @@
       "bgcolor": "#335"
     },
     {
-      "id": 4,
-      "type": "CheckpointLoaderSimple",
-      "pos": [
-        30,
-        610
-      ],
-      "size": {
-        "0": 315,
-        "1": 98
-      },
-      "flags": {},
-      "order": 11,
-      "mode": 0,
-      "outputs": [
-        {
-          "name": "MODEL",
-          "type": "MODEL",
-          "links": [
-            120,
-            170
-          ],
-          "slot_index": 0
-        },
-        {
-          "name": "CLIP",
-          "type": "CLIP",
-          "links": [
-            122,
-            123,
-            163
-          ],
-          "slot_index": 1
-        },
-        {
-          "name": "VAE",
-          "type": "VAE",
-          "links": [
-            46
-          ],
-          "slot_index": 2
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "CheckpointLoaderSimple"
-      },
-      "widgets_values": [
-        "realvisxlV40_v40Bakedvae.safetensors"
-      ]
-    },
-    {
       "id": 20,
       "type": "KSamplerAdvanced",
       "pos": [
@@ -2000,7 +1473,7 @@
         "1": 550
       },
       "flags": {},
-      "order": 34,
+      "order": 28,
       "mode": 0,
       "inputs": [
         {
@@ -2047,8 +1520,8 @@
           "links": [
             31
           ],
-          "shape": 3,
-          "slot_index": 0
+          "slot_index": 0,
+          "shape": 3
         }
       ],
       "properties": {
@@ -2079,7 +1552,7 @@
         "1": 550
       },
       "flags": {},
-      "order": 39,
+      "order": 34,
       "mode": 0,
       "inputs": [
         {
@@ -2126,8 +1599,8 @@
           "links": [
             49
           ],
-          "shape": 3,
-          "slot_index": 0
+          "slot_index": 0,
+          "shape": 3
         }
       ],
       "properties": {
@@ -2145,6 +1618,326 @@
         10000,
         "disable"
       ]
+    },
+    {
+      "id": 43,
+      "type": "Reroute",
+      "pos": [
+        500,
+        790
+      ],
+      "size": [
+        75,
+        26
+      ],
+      "flags": {},
+      "order": 25,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "",
+          "type": "*",
+          "link": 106
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "IMAGE",
+          "links": [
+            171
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "showOutputText": false,
+        "horizontal": false
+      }
+    },
+    {
+      "id": 45,
+      "type": "LoadImage",
+      "pos": [
+        60,
+        1490
+      ],
+      "size": [
+        320,
+        310
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            102
+          ],
+          "slot_index": 0,
+          "shape": 3
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "a2.jpg",
+        "image"
+      ]
+    },
+    {
+      "id": 32,
+      "type": "LoadImage",
+      "pos": [
+        70,
+        1110
+      ],
+      "size": [
+        320,
+        310
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            83
+          ],
+          "slot_index": 0,
+          "shape": 3
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "a3.png",
+        "image"
+      ]
+    },
+    {
+      "id": 33,
+      "type": "LoadImage",
+      "pos": [
+        430,
+        1480
+      ],
+      "size": [
+        320,
+        310
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            84
+          ],
+          "slot_index": 0,
+          "shape": 3
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "a1.jpg",
+        "image"
+      ]
+    },
+    {
+      "id": 77,
+      "type": "RepeatImageBatch",
+      "pos": [
+        460,
+        1100
+      ],
+      "size": {
+        "0": 315,
+        "1": 58
+      },
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "RepeatImageBatch"
+      },
+      "widgets_values": [
+        2
+      ]
+    },
+    {
+      "id": 4,
+      "type": "CheckpointLoaderSimple",
+      "pos": [
+        30,
+        610
+      ],
+      "size": {
+        "0": 315,
+        "1": 98
+      },
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            170,
+            172
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            122,
+            123,
+            163
+          ],
+          "slot_index": 1
+        },
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            46
+          ],
+          "slot_index": 2
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CheckpointLoaderSimple"
+      },
+      "widgets_values": [
+        "realvisxlV40_v40Bakedvae.safetensors"
+      ]
+    },
+    {
+      "id": 79,
+      "type": "PhotoMakerLoraLoaderPlus",
+      "pos": [
+        30,
+        310
+      ],
+      "size": {
+        "0": 315,
+        "1": 78
+      },
+      "flags": {},
+      "order": 18,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 172
+        },
+        {
+          "name": "photomaker",
+          "type": "PHOTOMAKER",
+          "link": 174
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            173
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PhotoMakerLoraLoaderPlus"
+      },
+      "widgets_values": [
+        1
+      ],
+      "color": "#323",
+      "bgcolor": "#535"
+    },
+    {
+      "id": 74,
+      "type": "PhotoMakerLoaderPlus",
+      "pos": [
+        30,
+        460
+      ],
+      "size": [
+        320,
+        60
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "outputs": [
+        {
+          "name": "PHOTOMAKER",
+          "type": "PHOTOMAKER",
+          "links": [
+            168,
+            174
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PhotoMakerLoaderPlus"
+      },
+      "widgets_values": [
+        "photomaker-v1.bin"
+      ],
+      "color": "#323",
+      "bgcolor": "#535"
     }
   ],
   "links": [
@@ -2285,22 +2078,6 @@
       "*"
     ],
     [
-      74,
-      32,
-      0,
-      38,
-      0,
-      "IMAGE"
-    ],
-    [
-      75,
-      33,
-      0,
-      39,
-      0,
-      "IMAGE"
-    ],
-    [
       83,
       32,
       0,
@@ -2317,51 +2094,11 @@
       "IMAGE"
     ],
     [
-      85,
-      39,
-      0,
-      42,
-      1,
-      "IMAGE"
-    ],
-    [
-      86,
-      38,
-      0,
-      42,
-      0,
-      "IMAGE"
-    ],
-    [
       93,
       44,
       0,
       34,
       0,
-      "IMAGE"
-    ],
-    [
-      97,
-      45,
-      0,
-      46,
-      0,
-      "IMAGE"
-    ],
-    [
-      98,
-      42,
-      0,
-      47,
-      0,
-      "IMAGE"
-    ],
-    [
-      99,
-      46,
-      0,
-      47,
-      1,
       "IMAGE"
     ],
     [
@@ -2445,22 +2182,6 @@
       "*"
     ],
     [
-      120,
-      4,
-      0,
-      53,
-      0,
-      "MODEL"
-    ],
-    [
-      121,
-      53,
-      0,
-      24,
-      0,
-      "*"
-    ],
-    [
       122,
       4,
       1,
@@ -2475,22 +2196,6 @@
       6,
       0,
       "CLIP"
-    ],
-    [
-      127,
-      57,
-      0,
-      58,
-      0,
-      "*"
-    ],
-    [
-      128,
-      47,
-      0,
-      41,
-      0,
-      "*"
     ],
     [
       132,
@@ -2723,28 +2428,48 @@
       20,
       0,
       "MODEL"
+    ],
+    [
+      171,
+      43,
+      0,
+      41,
+      0,
+      "*"
+    ],
+    [
+      172,
+      4,
+      0,
+      79,
+      0,
+      "MODEL"
+    ],
+    [
+      173,
+      79,
+      0,
+      24,
+      0,
+      "*"
+    ],
+    [
+      174,
+      74,
+      0,
+      79,
+      1,
+      "PHOTOMAKER"
     ]
   ],
   "groups": [
     {
       "title": "Batch images",
       "bounding": [
-        28,
-        831,
+        30,
+        830,
         762,
         997
-      ],
-      "color": "#8A8",
-      "font_size": 24,
-      "locked": false
-    },
-    {
-      "title": "Prepare images with IP-Adapter nodes",
-      "bounding": [
-        816,
-        831,
-        459,
-        998
       ],
       "color": "#8A8",
       "font_size": 24,
@@ -2777,18 +2502,18 @@
   ],
   "config": {},
   "extra": {
+    "ds": {
+      "scale": 0.7303873697916672,
+      "offset": [
+        8.650912941728837,
+        266.88393079780343
+      ]
+    },
     "0246.VERSION": [
       0,
       0,
       4
-    ],
-    "ds": {
-      "scale": 0.5065192436675229,
-      "offset": [
-        447.8160656654408,
-        630.4439921405294
-      ]
-    }
+    ]
   },
   "version": 0.4
 }

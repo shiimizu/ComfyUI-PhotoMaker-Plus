@@ -6,7 +6,7 @@ PhotoMaker implementation that follows the ComfyUI way of doing things. The code
 
 <div align="center">
 
-  <img width="1261" alt="example workflow" src="https://github.com/user-attachments/assets/412741f1-49de-4bf0-9101-82e1e205a133">
+  <img width="1261" alt="example workflow" src="https://github.com/user-attachments/assets/0b05d24f-ec3a-4be7-9e93-9169c66c65f5">
   
 </div>
 
