@@ -140,8 +140,7 @@ class PhotoMakerEncodePlus:
         tokens = clip.tokenize(text)
         class_tokens_mask = {}
         out_tokens = {}
-        num_tokens = getattr(photomaker, 'num_tokens', 2)
-        num_tokens = 1
+        num_tokens = getattr(photomaker, 'num_tokens', 1)
         for key, val in tokens.items():
             clip_tokenizer = getattr(clip.tokenizer, f'clip_{key}', clip.tokenizer)
             img_token = clip_tokenizer.tokenizer(trigger_word, truncation=False, add_special_tokens=False)["input_ids"][0] # only get the first token
